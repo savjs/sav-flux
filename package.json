@@ -1,0 +1,36 @@
+{
+  "name": "sav-flux",
+  "version": "0.0.1",
+  "description": "flux for savjs",
+  "main": "dist/sav-flux.cjs.js",
+  "module": "dist/sav-flux.es.js",
+  "jsnext:main": "dist/sav-flux.es.js",
+  "scripts": {
+    "build": "rollup -c",
+    "test": "npm run build && ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/savjs/sav-flux.git"
+  },
+  "author": {
+    "name": "jetiny",
+    "email": "86287344@qq.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/savjs/sav-flux/issues"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "eslint-plugin-standard": "^2.0.1",
+    "expect.js": "^0.3.1",
+    "rollup": "^0.36.3",
+    "rollup-plugin-buble": "^0.14.0",
+    "standard": "^8.5.0"
+  },
+  "homepage": "https://github.com/savjs/sav-flux#readme",
+  "dependencies": {
+    "sav-util": "0.0.1"
+  }
+}
