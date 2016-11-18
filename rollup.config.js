@@ -1,5 +1,4 @@
 import buble from 'rollup-plugin-buble'
-import includePaths from 'rollup-plugin-includepaths'
 import path from 'path'
 
 const pack = require('./package.json')
@@ -12,9 +11,6 @@ export default {
     { dest: 'dist/sav-flux.es.js', format: 'es' },
   ],
   plugins: [
-    includePaths({
-      paths: [path.resolve(__dirname, '..')],
-    }),
     buble()
   ],
   banner   () {
