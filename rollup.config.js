@@ -1,5 +1,4 @@
 import buble from 'rollup-plugin-buble'
-import path from 'path'
 
 const pack = require('./package.json')
 const YEAR = new Date().getFullYear()
@@ -8,7 +7,7 @@ export default {
   entry: 'src/index.js',
   targets: [
     { dest: 'dist/sav-flux.cjs.js', format: 'cjs' },
-    { dest: 'dist/sav-flux.es.js', format: 'es' },
+    { dest: 'dist/sav-flux.es.js', format: 'es' }
   ],
   plugins: [
     buble()

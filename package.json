@@ -7,7 +7,8 @@
   "jsnext:main": "dist/sav-flux.es.js",
   "scripts": {
     "build": "rollup -c",
-    "test": "npm run build && ava"
+    "lint": "standard rollup.config.js test/** src/**",
+    "test": "npm run lint && npm run build && ava"
   },
   "repository": {
     "type": "git",
