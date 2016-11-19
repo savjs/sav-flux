@@ -1,4 +1,4 @@
-import {bindEvent, extend, clone, isPromiseLike} from 'sav-util'
+import {bindEvent, extend, clone, isPromiseLike, probe} from 'sav-util'
 
 export function Flux (opts = {strict: true}){
 	let flux = this
@@ -174,7 +174,7 @@ function initProxy({prop, proxys}) {
 	})
 }
 
-function initDeclare({prop, flux, emit, updateState}) {
+function initDeclare({prop, flux, emit, commit, dispatch, updateState}) {
 	let declare = (mod) => {
 		if (!mod)
 			return
@@ -183,6 +183,10 @@ function initDeclare({prop, flux, emit, updateState}) {
 		if (mod.mutations) {
 			for(let mutation in mod.mutations) {
 				flux.mutations[mutation] = mod.mutations[mutation]
+				if (!probe.Proxy) {
+					proxyFunction(commit, mutation)
+					proxyFunction(dispatch, mutation)
+				}
 			}
 		}
 		// if (mod.proxys) {
@@ -193,6 +197,9 @@ function initDeclare({prop, flux, emit, updateState}) {
 		if (mod.actions) {
 			for(let action in mod.actions) {
 				flux.actions[action] = mod.actions[action]
+				if (!probe.Proxy) {
+					proxyFunction(dispatch, action)
+				}
 			}
 		}
 		if (mod.state) {
@@ -203,8 +210,14 @@ function initDeclare({prop, flux, emit, updateState}) {
 	prop.val('declare', declare)
 }
 
+function proxyFunction(target, name) {
+	target[name] = ((payload)=>{
+		return target(name, payload)
+	})
+}
+
 function proxyApi(entry) {
-	if (typeof Proxy != 'undefined') {
+	if (probe.Proxy) {
 		return new Proxy(entry, {
 	        get (target, name) {
 	            return payload=> {
@@ -226,10 +239,8 @@ function initPromise({prop}) {
 	})
 }
 
-const isNoMessageChannel = typeof MessageChannel === 'undefined'
-
 function initCloneThen({prop, clone, resolve}) {
-	if (isNoMessageChannel) {
+	if (!prop.MessageChannel) {
 	    prop.val('cloneThen', value => {
 			return resolve().then(()=>resolve(clone(value)))
 		})
