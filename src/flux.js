@@ -239,8 +239,8 @@ function initPromise ({prop}) {
 }
 
 function initCloneThen ({prop, clone, resolve}) {
-  if (!prop.MessageChannel) {
-    prop.val('cloneThen', value => {
+  if (!probe.MessageChannel) {
+    probe.val('cloneThen', value => {
       return resolve().then(() => resolve(clone(value)))
     })
     return
