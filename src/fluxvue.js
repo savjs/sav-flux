@@ -22,11 +22,14 @@ function resetStoreVM (Vue, flux, vaf, state) {
 
 let Vue
 
-export function FluxVue ({flux, mixinActions = false}) {
+export function FluxVue ({flux, mixinActions = false, injects = []}) {
   let vaf = {
     dispatch: flux.dispatch,
     proxy: flux.proxy
   }
+  injects.forEach(key => {
+    vaf[key] = flux[key]
+  })
   resetStoreVM(Vue, flux, vaf, flux.getState())
   flux.on('replace', (state) => {
     resetStoreVM(Vue, flux, vaf, state)
@@ -34,9 +37,8 @@ export function FluxVue ({flux, mixinActions = false}) {
   if (mixinActions) {
     Vue.mixin({
       methods: mapActions(unique(
-                Object.keys(flux.mutations)
-                .concat(Object.keys(flux.actions))
-            ))
+        Object.keys(flux.mutations).concat(Object.keys(flux.actions))
+      ))
     })
   }
   return vaf
@@ -48,27 +50,27 @@ FluxVue.install = function install (vue) {
     beforeCreate () {
       const options = this.$options
       if (options.vaf) {
-        this.$vaf = options.vaf
-      } else if (options.parent && options.parent.$vaf) {
-        this.$vaf = options.parent.$vaf
+        this.$flux = options.vaf
+      } else if (options.parent && options.parent.$flux) {
+        this.$flux = options.parent.$flux
       }
       let {proxys, methods} = options
-      if (proxys && this.$vaf) {
+      if (proxys && this.$flux) {
         let maps = this.__vafMaps = {}
         Object.keys(proxys).map((key) => {
           maps[key] = (typeof proxys[key] === 'function' ? proxys[key] : methods[proxys[key]]).bind(this)
         })
-        this.$vaf.proxy(maps)
+        this.$flux.proxy(maps)
       }
     },
     beforeDestroy () {
       const options = this.$options
       let {proxys} = options
-      if (proxys && this.$vaf && this.__vafMaps) {
-        this.$vaf.proxy(this.__vafMaps, null)
+      if (proxys && this.$flux && this.__vafMaps) {
+        this.$flux.proxy(this.__vafMaps, null)
       }
-      if (this.$vaf) {
-        delete this.$vaf
+      if (this.$flux) {
+        delete this.$flux
       }
     }
   })
@@ -80,9 +82,9 @@ export function mapGetters (getters) {
     let key = ref.key
     let val = ref.val
     res[key] = isFunction(val) ? function mappedGetter () { // function(state){}
-      return val.call(this, this.$vaf.vm.state)
+      return val.call(this, this.$flux.vm.state)
     } : function mappedGetter () {
-      return this.$vaf.vm.state[val]
+      return this.$flux.vm.state[val]
     }
   })
   return res
@@ -94,7 +96,7 @@ export function mapActions (actions) {
     let key = ref.key
     let val = ref.val
     res[key] = function mappedAction (payload) {
-      return this.$vaf.dispatch(val, payload)
+      return this.$flux.dispatch(val, payload)
     }
   })
   return res
