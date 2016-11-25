@@ -19,7 +19,7 @@
     "jest": "17.0.0",
     "jest-react-native": "17.0.0",
     "react-test-renderer": "15.3.2",
-    "tcomb-form-native": "^0.6.1",
-    "hfjy-base":"../../"
+    "sav-flux": "../../",
+    "tcomb-form-native": "^0.6.1"
   }
 }

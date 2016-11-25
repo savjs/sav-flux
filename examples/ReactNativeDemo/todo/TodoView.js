@@ -1,4 +1,4 @@
-import {Flux} from 'hfjy-base/src/flux/flux.js'
+import {Flux} from 'sav-flux'
 
 import TodoModel from './todoModel'
 
@@ -55,14 +55,14 @@ export default class TodoView extends Component {
 			this.setState({
 				text: ''
 			})
-			flux.dispatch("createNew", title)
+			flux.dispatch.createNew(title)
 		}
 	}
 	onCheckChange(item) {
-		flux.dispatch("toggleCompleted", item)
+		flux.dispatch.toggleCompleted(item)
 	}
 	removeTodo (item) {
-		flux.dispatch("removeItemById", item.id)
+		flux.dispatch.removeItemById(item.id)
 	}
 	render() {
 		const self = this

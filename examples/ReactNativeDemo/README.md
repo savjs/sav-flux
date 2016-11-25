@@ -1,5 +1,11 @@
 #### 创建项目
 ```
+# 首先要安装nodejs
+推荐高级用户使用node安装器安装
+    Windows 下推荐 Nodist 
+    OSX 下推荐 nvm
+
+# 安装RN工具
 set npm_config_registry=https://registry.npm.taobao.org
 npm i -g react-native-cli
 
@@ -7,8 +13,14 @@ npm i -g react-native-cli
 react-native -v
     react-native-cli: 1.0.0
     react-native: n/a - not inside a React Native project directory
-#创建项目
+
+#创建项目(本项目已不需要)
 react-native init ReactNativeDemo
+
+#安装flux (本项目已不需要) 安装完毕后应该修改下package.json 使用相对路径
+npm i --save-dev ../../
+"sav-flux": "../../",
+
 ```
 
 #### 目录结构
@@ -27,11 +39,16 @@ __tests__
 node_modules
 ```
 
+#### 安装依赖
+
+```
+npm install
+```
+
 ### Widnows Android 配置
 
 安装 Android Studio
 安装 JDK
-安装 Nodejs
 
 非必须
     修改 android/gradle/wrapper/gradle-wrapper.properties文件 因为gradle下载比较慢

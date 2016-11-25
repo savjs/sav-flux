@@ -9,7 +9,7 @@
     "build": "rollup -c",
     "lint": "standard rollup.config.js test/** src/**",
     "start": "watch -p \"+(test|src)/*.js\" -c \"npm test\"",
-    "test": "npm run lint && npm run build && ava"
+    "test": "npm run lint && npm run build && ava ./test"
   },
   "repository": {
     "type": "git",

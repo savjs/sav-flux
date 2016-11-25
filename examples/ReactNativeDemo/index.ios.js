@@ -9,3 +9,5 @@ import {
 import TodoView from './todo/TodoView'
 
 AppRegistry.registerComponent('ReactNativeDemo', () => TodoView);
+
+export default TodoView

@@ -36,7 +36,7 @@ export default {
 			newItem.title = title
 			newItem.id = ++ _startIdx 
 			newItem.isCompleted = false
-			commit('createNew',  newItem)
+			commit.createNew(newItem)
 			return dispatch.onCreateNew(newItem)
 		},
 	}
