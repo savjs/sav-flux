@@ -1,6 +1,6 @@
 {
   "name": "sav-flux",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "flux for savjs",
   "main": "dist/sav-flux.cjs.js",
   "module": "dist/sav-flux.es.js",

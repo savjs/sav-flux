@@ -238,7 +238,7 @@ function initPromise ({prop}) {
   })
 }
 
-function initCloneThen ({prop, clone, resolve}) {
+function initCloneThen ({prop, clone, resolve, then}) {
   if (!probe.MessageChannel) {
     prop.val('cloneThen', value => {
       return resolve().then(() => resolve(clone(value)))
@@ -260,7 +260,19 @@ function initCloneThen ({prop, clone, resolve}) {
     return new Promise(resolve => {
       const key = idx++
       maps[key] = resolve
-      channel.port1.postMessage({key, value})
+      try {
+        channel.port1.postMessage({key, value})
+      } catch (err) {
+        console.error('cloneThen.postMessage', err)
+        delete maps[key]
+        try {
+          value = JSON.parse(JSON.stringify(value))
+        } catch (err) {
+          console.error('cloneThen.JSON', err)
+          value = clone(value)
+        }
+        return then(() => resolve(value))
+      }
     })
   })
 }
