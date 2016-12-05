@@ -56,10 +56,10 @@ function initState ({prop, emit, cloneThen, clone, resolve}) {
   prop.val('getState', () => clone(state))
 
   prop.val('replaceState', newState => {
-    for(let x in state) {
+    for (let x in state) {
       delete state[x]
     }
-    for(let x in newState) {
+    for (let x in newState) {
       state[x] = newState[x]
     }
     return cloneThen(newState).then(cloneState => {
