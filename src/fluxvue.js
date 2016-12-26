@@ -41,6 +41,13 @@ export function FluxVue ({flux, mixinActions = false, injects = []}) {
       ))
     })
   }
+  Vue.mixin({
+    methods: {
+      dispatch (method, payload) {
+        return vaf.dispatch(method, payload)
+      }
+    }
+  })
   return vaf
 }
 
