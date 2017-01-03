@@ -100,16 +100,22 @@ function initCommit ({prop, flux, updateState, resolve}) {
     }
     let state = flux.state
     let ret = entry(flux, payload)
-    if (ret) {
-      if (ret === state) {
-        throw new Error('[flux] commit require new object rather than old state')
+    let update = (ret) => {
+      if (ret) {
+        if (ret === state) {
+          throw new Error('[flux] commit require new object rather than old state')
+        }
+        if (typeof ret !== 'object') {
+          throw new Error('[flux] commit require new object')
+        }
+        return updateState(ret)
       }
-      if (typeof ret !== 'object') {
-        throw new Error('[flux] commit require new object')
-      }
-      return updateState(ret)
     }
-    return resolve()
+    if (isPromiseLike(ret)) {
+      return ret.then(update)
+    } else {
+      update(ret)
+    }
   }
   prop.val('commit', proxyApi(commit))
 }
