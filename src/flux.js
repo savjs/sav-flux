@@ -110,11 +110,12 @@ function initCommit ({prop, flux, updateState, resolve}) {
         }
         return updateState(ret)
       }
+      return resolve()
     }
     if (isPromiseLike(ret)) {
       return ret.then(update)
     } else {
-      update(ret)
+      return update(ret)
     }
   }
   prop.val('commit', proxyApi(commit))
