@@ -3,29 +3,27 @@ import { bindEvent, extend, clone, isPromiseLike, probe } from 'sav-util'
 export function Flux (opts = {strict: true}) {
   let flux = this
   let prop = initProp(flux)
-  let {val} = prop
-  val('flux', flux)
-  val('prop', prop)
-  val('mutations', {})
-  val('actions', {})
-  val('proxys', {})
-  val('opts', opts)
+  prop('flux', flux)
+  prop('prop', prop)
+  prop('mutations', {})
+  prop('actions', {})
+  prop('proxys', {})
+  prop('opts', opts)
   initUse(flux)([initUtil, bindEvent, initPromise, initCloneThen,
     initState, initCommit, initDispatch, initProxy,
     initDeclare])
 }
 
 function initProp (flux) {
-  return {
-    get (key, val, opts = {}) {
-      opts.get = val
-      Object.defineProperty(flux, key, opts)
-    },
-    val (key, val, opts = {}) {
-      opts.value = val
-      Object.defineProperty(flux, key, opts)
-    }
+  let prop = (key, value, opts = {}) => {
+    opts.value = value
+    Object.defineProperty(flux, key, opts)
   }
+  prop.get = (key, value, opts = {}) => {
+    opts.get = value
+    Object.defineProperty(flux, key, opts)
+  }
+  return prop
 }
 
 function initUse ({flux, prop}) {
@@ -37,13 +35,13 @@ function initUse ({flux, prop}) {
     }
     plugin(flux, opts)
   }
-  prop.val('use', use)
+  prop('use', use)
   return use
 }
 
 function initUtil ({prop}) {
-  prop.val('clone', clone)
-  prop.val('extend', extend)
+  prop('clone', clone)
+  prop('extend', extend)
 }
 
 function initState ({prop, emit, cloneThen, clone, resolve}) {
@@ -53,9 +51,9 @@ function initState ({prop, emit, cloneThen, clone, resolve}) {
       throw new Error('[flux] Use flux.replaceState() to explicit replace store state.')
     }
   })
-  prop.val('getState', () => clone(state))
+  prop('getState', () => clone(state))
 
-  prop.val('replaceState', newState => {
+  prop('replaceState', newState => {
     for (let x in state) {
       delete state[x]
     }
@@ -68,7 +66,7 @@ function initState ({prop, emit, cloneThen, clone, resolve}) {
     })
   })
 
-  prop.val('updateState', (changedState, slice) => {
+  prop('updateState', (changedState, slice) => {
     if (typeof changedState !== 'object') {
       throw new Error('[flux] updateState require new state as object')
     }
@@ -118,7 +116,7 @@ function initCommit ({prop, flux, updateState, resolve}) {
       return update(ret)
     }
   }
-  prop.val('commit', proxyApi(commit))
+  prop('commit', proxyApi(commit))
 }
 
 function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
@@ -160,11 +158,11 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
       return resolve(data)
     }) : ret
   }
-  prop.val('dispatch', proxyApi(dispatch))
+  prop('dispatch', proxyApi(dispatch))
 }
 
 function initProxy ({prop, proxys}) {
-  prop.val('proxy', (name, value) => {
+  prop('proxy', (name, value) => {
     if (typeof name === 'object') { // batch mode
       for (var x in name) {
         if (value === null) {
@@ -218,7 +216,7 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
     }
     emit('declare', mod)
   }
-  prop.val('declare', declare)
+  prop('declare', declare)
 }
 
 function proxyFunction (target, name) {
@@ -242,17 +240,17 @@ function proxyApi (entry) {
 
 function initPromise ({prop}) {
   let PROMISE = Promise
-  prop.val('resolve', PROMISE.resolve.bind(PROMISE))
-  prop.val('reject', PROMISE.reject.bind(PROMISE))
-  prop.val('all', PROMISE.all.bind(PROMISE))
-  prop.val('then', fn => {
+  prop('resolve', PROMISE.resolve.bind(PROMISE))
+  prop('reject', PROMISE.reject.bind(PROMISE))
+  prop('all', PROMISE.all.bind(PROMISE))
+  prop('then', fn => {
     return new PROMISE(fn)
   })
 }
 
 function initCloneThen ({prop, clone, resolve, then}) {
   if (!probe.MessageChannel) {
-    prop.val('cloneThen', value => {
+    prop('cloneThen', value => {
       return resolve().then(() => resolve(clone(value)))
     })
     return
@@ -268,7 +266,7 @@ function initCloneThen ({prop, clone, resolve, then}) {
     resolve(value)
     delete maps[key]
   }
-  prop.val('cloneThen', value => {
+  prop('cloneThen', value => {
     return new Promise(resolve => {
       const key = idx++
       maps[key] = resolve

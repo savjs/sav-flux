@@ -1,11 +1,11 @@
 import test from 'ava'
 import {Flux} from '../'
-import {isFunction, isObject} from 'sav-util'
+import {isFunction} from 'sav-util'
 
 test('flux#api', ava => {
   const flux = new Flux()
 
-  ava.true(isObject(flux.prop))
+  ava.true(isFunction(flux.prop))
   ava.true(isFunction(flux.use))
 
   ava.true(isFunction(flux.clone))
