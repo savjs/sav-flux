@@ -191,6 +191,9 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
     }
     if (mod.mutations) {
       for (let mutation in mod.mutations) {
+        if (flux.mutations[mutation]) {
+          throw new Error(`[flux] mutation exists: ${mutation}`)
+        }
         flux.mutations[mutation] = mod.mutations[mutation]
         if (!probe.Proxy) {
           proxyFunction(commit, mutation)
@@ -205,6 +208,9 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
     // }
     if (mod.actions) {
       for (let action in mod.actions) {
+        if (flux.actions[action]) {
+          throw new Error(`[flux] action exists: ${action}`)
+        }
         flux.actions[action] = mod.actions[action]
         if (!probe.Proxy) {
           proxyFunction(dispatch, action)
@@ -212,6 +218,12 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
       }
     }
     if (mod.state) {
+      let states = flux.state
+      for (let state in mod.state) {
+        if (state in states) {
+          throw new Error(`[flux] state exists: ${state}`)
+        }
+      }
       updateState(mod.state, true)
     }
     emit('declare', mod)
