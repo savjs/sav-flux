@@ -103,6 +103,10 @@ export function mapActions (actions) {
     let key = ref.key
     let val = ref.val
     res[key] = function mappedAction (payload) {
+      if (!this.$flux) {
+        let message = 'can not call action ${key} without flux'
+        return Promise.reject(new Error(message))
+      }
       return this.$flux.dispatch(val, payload)
     }
   })
