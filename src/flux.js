@@ -54,13 +54,15 @@ function initState ({prop, emit, cloneThen, clone, resolve}) {
   prop('getState', () => clone(state))
 
   prop('replaceState', newState => {
+    let stateStr = JSON.stringify(newState)
+    newState = JSON.parse(stateStr)
     for (let x in state) {
       delete state[x]
     }
     for (let x in newState) {
       state[x] = newState[x]
     }
-    return cloneThen(newState).then(cloneState => {
+    return Promise.resolve(JSON.parse(stateStr)).then((cloneState) => {
       emit('replace', cloneState)
       return cloneState
     })
