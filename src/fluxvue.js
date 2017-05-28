@@ -61,13 +61,23 @@ FluxVue.install = function install (vue) {
       } else if (options.parent && options.parent.$flux) {
         this.$flux = options.parent.$flux
       }
-      let {proxys, methods} = options
-      if (proxys && this.$flux) {
-        let maps = this.__vafMaps = {}
-        Object.keys(proxys).map((key) => {
-          maps[key] = (typeof proxys[key] === 'function' ? proxys[key] : methods[proxys[key]]).bind(this)
-        })
-        this.$flux.proxy(maps)
+      let {proxys, methods, actions, getters, computed} = options
+      if (this.$flux) {
+        if (actions) {
+          methods || (methods = options.methods = {})
+          Object.assign(methods, mapActions(actions))
+        }
+        if (getters) {
+          computed || (computed = options.computed = {})
+          Object.assign(computed, mapGetters(getters))
+        }
+        if (proxys) {
+          let maps = this.__vafMaps = {}
+          Object.keys(proxys).map((key) => {
+            maps[key] = (typeof proxys[key] === 'function' ? proxys[key] : methods[proxys[key]]).bind(this)
+          })
+          this.$flux.proxy(maps)
+        }
       }
     },
     beforeDestroy () {
