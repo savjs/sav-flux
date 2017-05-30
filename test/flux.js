@@ -8,6 +8,7 @@ test('flux#api', ava => {
   ava.true(isFunction(flux.prop))
   ava.true(isFunction(flux.use))
 
+  ava.true(isFunction(flux.opt))
   ava.true(isFunction(flux.clone))
   ava.true(isFunction(flux.extend))
   ava.true(isFunction(flux.cloneThen))

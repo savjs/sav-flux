@@ -39,9 +39,12 @@ function initUse ({flux, prop}) {
   return use
 }
 
-function initUtil ({prop}) {
+function initUtil ({prop, opts}) {
   prop('clone', clone)
   prop('extend', extend)
+  prop('opt', (name, default = null) => {
+    return name in opts ? opts[name] : default
+  })
 }
 
 function initState ({prop, emit, cloneThen, clone, resolve}) {
