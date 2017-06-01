@@ -9,8 +9,28 @@ function resetStoreVM (Vue, flux, vaf, state) {
   Vue.config.silent = true
   let vm = vaf.vm = new Vue({ data: {state} })
   flux.on('update', vaf.watch = (newState) => {
-    for (let key in newState) {
-      vm.state[key] = newState[key]
+    if (isVmGetterMode) {
+      let updates = []
+      for (let key in newState) {
+        if (key in vm.state) {
+          vm.state[key] = newState[key]
+        } else { // dynamic computed methods
+          Vue.util.defineReactive(vm.state, key, newState[key])
+          if (vmGetterMaps[key]) {
+            vmGetterMaps[key].forEach((vmIt) => {
+              if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
+                updates.indexOf(vmIt) === -1 && updates.push(vmIt)
+                vmIt._computedWatchers[key].update()
+              }
+            })
+          }
+        }
+      }
+      updates.forEach(vm => vm.$forceUpdate())
+    } else { // old version use mapGetters
+      for (let key in newState) {
+        vm.state[key] = newState[key]
+      }
     }
   })
   Vue.config.silent = silent
@@ -51,6 +71,32 @@ export function FluxVue ({flux, mixinActions = false, injects = []}) {
   return vaf
 }
 
+let vmGetterMaps = {}
+let isVmGetterMode = false
+
+function registerVmGetters (vm, getters) {
+  isVmGetterMode || (isVmGetterMode = true)
+  getters = vm._getters = Object.keys(getters)
+  getters.forEach((key) => {
+    let arr = vmGetterMaps[key] || (vmGetterMaps[key] = [])
+    arr.push(vm)
+  })
+}
+
+function destroyVmGetters (vm) {
+  if (vm._getters) {
+    vm._getters.forEach((key) => {
+      if (vmGetterMaps[key]) {
+        let arr = vmGetterMaps[key]
+        let pos = arr.indexOf(vm)
+        if (pos >= -1) {
+          arr.splice(pos, 1)
+        }
+      }
+    })
+  }
+}
+
 FluxVue.install = function install (vue) {
   Vue = vue
   Vue.mixin({
@@ -69,7 +115,9 @@ FluxVue.install = function install (vue) {
         }
         if (getters) {
           computed || (computed = options.computed = {})
-          Object.assign(computed, mapGetters(getters))
+          let getterMaps = mapGetters(getters)
+          registerVmGetters(this, getterMaps)
+          Object.assign(computed, getterMaps)
         }
         if (proxys) {
           let maps = this.__vafMaps = {}
@@ -86,6 +134,9 @@ FluxVue.install = function install (vue) {
       if (proxys && this.$flux && this.__vafMaps) {
         this.$flux.proxy(this.__vafMaps, null)
       }
+      if (isVmGetterMode) {
+        destroyVmGetters(this)
+      }
       if (this.$flux) {
         delete this.$flux
       }
@@ -93,6 +144,7 @@ FluxVue.install = function install (vue) {
   })
 }
 
+// 后续不建议使用
 export function mapGetters (getters) {
   let res = {}
   normalizeMap(getters).forEach(function (ref) {
