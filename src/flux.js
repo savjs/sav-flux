@@ -121,7 +121,7 @@ function initCommit ({prop, flux, updateState, resolve}) {
       return update(ret)
     }
   }
-  prop('commit', proxyApi(commit))
+  prop('commit', flux.opts.noProxy ? commit : proxyApi(commit))
 }
 
 function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
@@ -163,7 +163,7 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
       return resolve(data)
     }) : ret
   }
-  prop('dispatch', proxyApi(dispatch))
+  prop('dispatch', flux.opts.noProxy ? dispatch : proxyApi(dispatch))
 }
 
 function initProxy ({prop, proxys}) {
@@ -200,7 +200,7 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
           throw new Error(`[flux] mutation exists: ${mutation}`)
         }
         flux.mutations[mutation] = mod.mutations[mutation]
-        if (!probe.Proxy) {
+        if (flux.opts.noProxy || !probe.Proxy) {
           proxyFunction(commit, mutation)
           proxyFunction(dispatch, mutation)
         }
@@ -217,7 +217,7 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
           throw new Error(`[flux] action exists: ${action}`)
         }
         flux.actions[action] = mod.actions[action]
-        if (!probe.Proxy) {
+        if (flux.opts.noProxy || !probe.Proxy) {
           proxyFunction(dispatch, action)
         }
       }
