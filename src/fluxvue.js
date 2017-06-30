@@ -1,4 +1,5 @@
 import {isFunction, unique} from 'sav-util'
+import {normalizeMap} from './util.js'
 
 function resetStoreVM (Vue, flux, vaf, state) {
   let oldVm = vaf.vm
@@ -173,18 +174,4 @@ export function mapActions (actions) {
     }
   })
   return res
-}
-
-function normalizeMap (map) {
-  return Array.isArray(map) ? map.map(key => {
-    return {
-      key: key,
-      val: key
-    }
-  }) : Object.keys(map).map(key => {
-    return {
-      key: key,
-      val: map[key]
-    }
-  })
 }
