@@ -26,54 +26,57 @@ export function FluxRiot ({flux, riot}) {
 
   flux.on('replace', (newState) => {
     connect.state = newState
-    for(let tagName in connect.binders) {
+    for (let tagName in connect.binders) {
       syncBinder(connect.binders[tagName])
     }
   })
 
   riot.mixin({
     init: function () {
-      if (this.getters) {
-        let tagName = this.__.tagName
-        let binder
-        if (connect.binders[tagName]) {
-          binder = connect.binders[tagName]
-        } else {
-          let getters = normalizeMap(this.getters);
-          let sync = {}
-          binder = {
-            sync,
-            keys: [],
-            vms: []
-          }
-          connect.binders[tagName] = binder
-          getters.forEach((key, val) => {
-            val = isFunction(val) ? () => {
-              val.call(null, connect.state)
-            } : () => {
-              connect.state[key]
+      this.on('before-mount', () => {
+        if (this.getters) {
+          let tagName = this.__.tagName
+          let binder
+          if (connect.binders[tagName]) {
+            binder = connect.binders[tagName]
+          } else {
+            let getters = normalizeMap(this.getters)
+            let sync = {}
+            binder = {
+              sync,
+              keys: [],
+              vms: []
             }
-            binder.keys.push(key)
-            (connect.binds[key] || (connect.binds[key] = [])).push(tagName)
-            sync[key] = val
+            connect.binders[tagName] = binder
+            getters.forEach(({key, val}) => {
+              let fn = isFunction(val) ? () => {
+                return val(connect.state)
+              } : () => {
+                return connect.state[key]
+              }
+              let binds = connect.binds[key] || (connect.binds[key] = [])
+              binds.push(tagName)
+              binder.keys.push(key)
+              sync[key] = fn
+            })
+          }
+          this.on('unmount', () => {
+            let idx = binder.vms.indexOf(this)
+            if (idx >= 0) {
+              binder.vms.splice(idx, 1)
+            }
+          })
+          binder.vms.push(this)
+          Object.assign(this, syncState(binder.keys, binder.sync))
+        }
+        if (this.actions) {
+          normalizeMap(this.actions).forEach(({key}) => {
+            this[key] = (payload) => {
+              return connect.dispatch(key, payload)
+            }
           })
         }
-        this.on('unmount', () => {
-          let idx = binder.vms.indexOf(this)
-          if (idx >= 0) {
-            binder.vms.splice(idx, 1)
-          }
-        })
-        binder.vms.push(this)
-        Object.assign(this, syncState(binder.keys, binder.sync))
-      }
-      if (this.actions) {
-        normalizeMap(this.actions).forEach((action) => {
-          this[action] = (payload) => {
-            return connect.dispatch(action, payload)
-          }
-        })
-      }
+      })
     }
   })
 }

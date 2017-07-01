@@ -35,6 +35,6 @@
   },
   "homepage": "https://github.com/savjs/sav-flux#readme",
   "dependencies": {
-    "sav-util": "^0.0.7"
+    "sav-util": "^1.0.21"
   }
 }

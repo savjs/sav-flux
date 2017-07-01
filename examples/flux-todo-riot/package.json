@@ -1,0 +1,15 @@
+{
+  "name": "flux-todo-riot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "boot.js",
+  "scripts": {
+    "test": "node ./rollup.config.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "riot": "^3.6.1",
+    "rollup-standalone": "^0.42.9"
+  }
+}
