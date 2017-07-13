@@ -19,3 +19,7 @@ let app = new Vue({
 	el: '#app',
 	...Todo
 })
+
+window.flux = flux
+
+export default app

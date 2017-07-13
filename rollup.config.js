@@ -1,4 +1,4 @@
-import buble from 'rollup-plugin-buble'
+import babel from 'rollup-plugin-babel'
 
 const pack = require('./package.json')
 const YEAR = new Date().getFullYear()
@@ -10,7 +10,14 @@ export default {
     { dest: 'dist/sav-flux.es.js', format: 'es' }
   ],
   plugins: [
-    buble()
+    babel({
+      babelrc: false,
+      externalHelpers: false,
+      exclude: 'node_modules/**',
+      'plugins': [
+        ['transform-object-rest-spread', { 'useBuiltIns': true }]
+      ]
+    })
   ],
   banner   () {
     return `/*!
@@ -20,9 +27,11 @@ export default {
  */`
   },
   // Cleaner console
-  onwarn (msg) {
-    if (msg && msg.startsWith('Treating')) {
-      return
+  onwarn (err) {
+    if (err) {
+      if (err.code !== 'UNRESOLVED_IMPORT') {
+        console.log(err.code, err.message)
+      }
     }
   }
 }

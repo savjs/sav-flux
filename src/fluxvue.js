@@ -1,5 +1,5 @@
 import {isFunction, unique} from 'sav-util'
-import {normalizeMap} from './util.js'
+import {normalizeMap, testAndUpdateDeepth} from './util.js'
 
 function resetStoreVM (Vue, flux, vaf, state) {
   let oldVm = vaf.vm
@@ -10,29 +10,30 @@ function resetStoreVM (Vue, flux, vaf, state) {
   Vue.config.silent = true
   let vm = vaf.vm = new Vue({ data: {state} })
   flux.on('update', vaf.watch = (newState) => {
-    if (isVmGetterMode) {
-      let updates = []
-      for (let key in newState) {
-        if (key in vm.state) {
-          vm.state[key] = newState[key]
-        } else { // dynamic computed methods
-          Vue.util.defineReactive(vm.state, key, newState[key])
-          if (vmGetterMaps[key]) {
-            vmGetterMaps[key].forEach((vmIt) => {
-              if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
-                updates.indexOf(vmIt) === -1 && updates.push(vmIt)
-                vmIt._computedWatchers[key].update()
-              }
-            })
-          }
-        }
-      }
-      updates.forEach(vm => vm.$forceUpdate())
-    } else { // old version use mapGetters
-      for (let key in newState) {
-        vm.state[key] = newState[key]
-      }
-    }
+    return testAndUpdateDeepth(vm.state, newState, Vue.util.defineReactive, true)
+    // if (isVmGetterMode) {
+    //   let updates = []
+    //   for (let key in newState) {
+    //     if (key in vm.state) {
+    //       vm.state[key] = newState[key]
+    //     } else { // dynamic computed methods
+    //       Vue.util.defineReactive(vm.state, key, newState[key])
+    //       if (vmGetterMaps[key]) {
+    //         vmGetterMaps[key].forEach((vmIt) => {
+    //           if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
+    //             updates.indexOf(vmIt) === -1 && updates.push(vmIt)
+    //             vmIt._computedWatchers[key].update()
+    //           }
+    //         })
+    //       }
+    //     }
+    //   }
+    //   updates.forEach(vm => vm.$forceUpdate())
+    // } else { // old version use mapGetters
+    //   for (let key in newState) {
+    //     vm.state[key] = newState[key]
+    //   }
+    // }
   })
   Vue.config.silent = silent
   if (oldVm) {
