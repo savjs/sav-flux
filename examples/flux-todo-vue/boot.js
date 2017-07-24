@@ -1,4 +1,6 @@
 import Vue from 'vue'
+import VueRouter from 'vue-router'
+
 import {Flux, FluxVue} from '../../src'
 
 import TodoModule from './todo'
@@ -11,13 +13,24 @@ let flux = new Flux({
 })
 flux.declare(TodoModule)
 
+let router = new VueRouter({
+  routes: [
+    {
+      name: "Todo",
+      path: "/",
+      component: Todo
+    }
+  ]
+})
+
 let app = new Vue({
 	vaf: new FluxVue({
 		flux,
+    router,
 		mixinActions: true
 	}),
-	el: '#app',
-	...Todo
+  router,
+	el: '#app'
 })
 
 window.flux = flux

@@ -29,6 +29,15 @@ export default {
 				}
 			}
 		},
+		restoreItems (_, todoList) {
+			if (!Array.isArray(todoList)) {
+				todoList = []
+			}
+			_startIdx = todoList.length
+			return {
+				todoList
+			}
+		}
 	},
 	actions: {
 		createNew ({resolve, commit, dispatch}, title) {
@@ -38,6 +47,6 @@ export default {
 			newItem.isCompleted = false
 			commit.createNew(newItem)
 			return dispatch.onCreateNew(newItem)
-		},
+		}
 	}
 }

@@ -12,7 +12,8 @@ export default {
   sourceMap: false,
   useStrict: false,
   external: [
-    'vue'
+    'vue',
+    'vue-router'
   ],
   plugins: [
     vue(),

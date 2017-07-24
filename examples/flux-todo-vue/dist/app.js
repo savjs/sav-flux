@@ -1,5 +1,6 @@
-var app = (function (Vue) {
+var app = (function (Vue,VueRouter) {
 Vue = 'default' in Vue ? Vue['default'] : Vue;
+VueRouter = 'default' in VueRouter ? VueRouter['default'] : VueRouter;
 
 function toStringType(val) {
   return Object.prototype.toString.call(val).slice(8, -1);
@@ -853,6 +854,9 @@ function FluxVue (ref) {
   var flux = ref.flux;
   var mixinActions = ref.mixinActions; if ( mixinActions === void 0 ) mixinActions = false;
   var injects = ref.injects; if ( injects === void 0 ) injects = [];
+  var router = ref.router;
+  var onRouteFail = ref.onRouteFail;
+  var payload = ref.payload;
 
   var vaf = {
     dispatch: flux.dispatch,
@@ -879,6 +883,37 @@ function FluxVue (ref) {
       }
     }
   });
+  if (router) {
+    router.beforeEach(function (to, from, next$$1) {
+      var matchedComponents = router.getMatchedComponents(to);
+      if (matchedComponents.length) {
+        Promise.all(matchedComponents.map(function (Component) {
+          if (Component.payload) {
+            var args = {
+              dispatch: vaf.dispatch,
+              route: router.currentRoute,
+              state: vaf.vm.state
+            };
+            if (payload) {
+              return payload(Component, args, to, from)
+            }
+            return Component.payload(args)
+          }
+        })).then(next$$1).catch(function (err) {
+          if (!(err instanceof Error)) {
+            return next$$1(err)
+          }
+          if (onRouteFail) {
+            return onRouteFail(to, from, next$$1, err)
+          } else {
+            next$$1(false);
+          }
+        });
+      } else {
+        next$$1();
+      }
+    });
+  }
   return vaf
 }
 
@@ -1071,6 +1106,15 @@ var TodoModule = {
 				}
 			}
 		},
+		restoreItems: function restoreItems (_, todoList) {
+			if (!Array.isArray(todoList)) {
+				todoList = [];
+			}
+			_startIdx = todoList.length;
+			return {
+				todoList: todoList
+			}
+		}
 	},
 	actions: {
 		createNew: function createNew$1 (ref, title) {
@@ -1084,7 +1128,7 @@ var TodoModule = {
 			newItem.isCompleted = false;
 			commit.createNew(newItem);
 			return dispatch.onCreateNew(newItem)
-		},
+		}
 	}
 };
 
@@ -1099,6 +1143,15 @@ staticRenderFns: [],
 				newText: '',
 				count: 0
 			}
+		},
+		payload: function payload (ref) {
+			var dispatch = ref.dispatch;
+
+			return dispatch('restoreItems', [{
+				title: 'payload-todo',
+				id: 1,
+				isCompleted: true
+			}])
 		},
 		proxys: {
 			onCreateNew: function onCreateNew (ref, item) {
@@ -1117,15 +1170,28 @@ var flux = new Flux({
 });
 flux.declare(TodoModule);
 
-var app = new Vue(Object.assign({}, {vaf: new FluxVue({
+var router = new VueRouter({
+  routes: [
+    {
+      name: "Todo",
+      path: "/",
+      component: Todo
+    }
+  ]
+});
+
+var app = new Vue({
+	vaf: new FluxVue({
 		flux: flux,
+    router: router,
 		mixinActions: true
 	}),
-	el: '#app'},
-	Todo));
+  router: router,
+	el: '#app'
+});
 
 window.flux = flux;
 
 return app;
 
-}(Vue));
+}(Vue,VueRouter));

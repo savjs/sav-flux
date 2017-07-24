@@ -44,7 +44,7 @@ function resetStoreVM (Vue, flux, vaf, state) {
 
 let Vue
 
-export function FluxVue ({flux, mixinActions = false, injects = []}) {
+export function FluxVue ({flux, mixinActions = false, injects = [], router, onRouteFail, payload}) {
   let vaf = {
     dispatch: flux.dispatch,
     proxy: flux.proxy
@@ -70,6 +70,37 @@ export function FluxVue ({flux, mixinActions = false, injects = []}) {
       }
     }
   })
+  if (router) {
+    router.beforeEach((to, from, next) => {
+      let matchedComponents = router.getMatchedComponents(to)
+      if (matchedComponents.length) {
+        Promise.all(matchedComponents.map(Component => {
+          if (Component.payload) {
+            let args = {
+              dispatch: vaf.dispatch,
+              route: router.currentRoute,
+              state: vaf.vm.state
+            }
+            if (payload) {
+              return payload(Component, args, to, from)
+            }
+            return Component.payload(args)
+          }
+        })).then(next).catch((err) => {
+          if (!(err instanceof Error)) {
+            return next(err)
+          }
+          if (onRouteFail) {
+            return onRouteFail(to, from, next, err)
+          } else {
+            next(false)
+          }
+        })
+      } else {
+        next()
+      }
+    })
+  }
   return vaf
 }
 
