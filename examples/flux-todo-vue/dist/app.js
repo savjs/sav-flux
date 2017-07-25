@@ -857,6 +857,7 @@ function FluxVue (ref) {
   var router = ref.router;
   var onRouteFail = ref.onRouteFail;
   var payload = ref.payload;
+  var deepth = ref.deepth; if ( deepth === void 0 ) deepth = -1;
 
   var vaf = {
     dispatch: flux.dispatch,
@@ -887,18 +888,17 @@ function FluxVue (ref) {
     router.beforeEach(function (to, from, next$$1) {
       var matchedComponents = router.getMatchedComponents(to);
       if (matchedComponents.length) {
-        Promise.all(matchedComponents.map(function (Component) {
-          if (Component.payload) {
-            var args = {
-              dispatch: vaf.dispatch,
-              route: router.currentRoute,
-              state: vaf.vm.state
-            };
-            if (payload) {
-              return payload(Component, args, to, from)
-            }
-            return Component.payload(args)
+        var args = {
+          dispatch: vaf.dispatch,
+          route: to,
+          from: from,
+          state: vaf.vm.state
+        };
+        Promise.all(getComponentsPayloads(matchedComponents, deepth).map(function (Component) {
+          if (payload) {
+            return payload(Component, args, to, from)
           }
+          return Component.payload(args)
         })).then(next$$1).catch(function (err) {
           if (!(err instanceof Error)) {
             return next$$1(err)
@@ -915,6 +915,32 @@ function FluxVue (ref) {
     });
   }
   return vaf
+}
+
+function getComponentsPayloads (components, depth) {
+  var payloads = [];
+  if (Array.isArray(components)) {
+    for (var i =0; i < components.length; ++i) {
+      var com = components[i];
+      if (com.payload) {
+        payloads.push(com);
+      }
+      if (depth && com.components) {
+        payloads = payloads.concat(getComponentsPayloads(com.components, depth--));
+      }
+    }
+  } else {
+    for (var comName in components) {
+      var com$1 = components[comName];
+      if (com$1.payload) {
+        payloads.push(com$1);
+      }
+      if (depth && com$1.components) {
+        payloads = payloads.concat(getComponentsPayloads(com$1.components, depth--));
+      }
+    }
+  }
+  return payloads
 }
 
 var vmGetterMaps = {};
