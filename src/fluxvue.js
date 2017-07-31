@@ -10,7 +10,7 @@ function resetStoreVM (Vue, flux, vaf, state) {
   Vue.config.silent = true
   let vm = vaf.vm = new Vue({ data: {state} })
   flux.on('update', vaf.watch = (newState) => {
-    return testAndUpdateDepth(vm, newState, Vue.util.defineReactive, true)
+    return testAndUpdateDepth(vm.state, newState, true, Vue)
     // if (isVmGetterMode) {
     //   let updates = []
     //   for (let key in newState) {
