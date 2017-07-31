@@ -35,7 +35,7 @@
     "rollup": "^0.41.4",
     "rollup-plugin-babel": "^2.7.1",
     "standard": "^8.5.0",
-    "vue": "^2.3.4",
+    "vue": "^2.4.2",
     "watch-cli": "^0.2.1"
   },
   "ava": {
@@ -49,6 +49,7 @@
   },
   "homepage": "https://github.com/savjs/sav-flux#readme",
   "dependencies": {
+    "babel-register": "^6.24.1",
     "sav-util": "^1.0.21"
   }
 }

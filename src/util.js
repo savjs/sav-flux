@@ -16,35 +16,34 @@ export function normalizeMap (map) {
 
 // 深度比较复制
 export function testAndUpdateDepth (oldState, newState, isVueRoot, Vue) {
-  const defineReactive = Vue.util.defineReactive
-
   Object.keys(newState).forEach((name) => {
     if (!(name in oldState)) {
       // 新加入的属性
       return Vue.set(oldState, name, newState[name])
     }
     // 旧的比较赋值
-    let newValue = newState[name]
-    let oldValue = oldState[name]
+    const newValue = newState[name]
+    const oldValue = oldState[name]
+
     if (isObject(newValue)) {
       if (!isObject(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
-        Vue.delete(oldState, name) // 需要先删除
-
-        defineReactive(oldState, name, newValue)
-        if (isVueRoot) { // 必须再通知一下
-          oldValue.__ob__.dep.notify()
-        }
+        Vue.delete(oldState, name)
+        Vue.set(oldState, name, newValue)
       } else { // 继续深度比较赋值
         testAndUpdateDepth(oldState[name], newValue, false, Vue)
       }
     } else if (isArray(newValue)) {
       if (!isArray(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
-        Vue.delete(oldState, name) // 需要先删除
+        Vue.delete(oldState, name)
+        Vue.set(oldState, name, newValue)
 
-        defineReactive(oldState, name, newValue)
-        if (isVueRoot) { // 必须再通知一下
-          oldValue.__ob__.dep.notify()
-        }
+        // @todo 需要先删除
+        // delete oldState[name]
+        // const ob = oldState.__ob__
+        // defineReactive(ob.value, name, newValue)
+        // if (isVueRoot && ob) { // 必须再通知一下
+        //   ob.dep.notify()
+        // }
       } else {
         testAndUpdateArray(oldValue, newValue, Vue)
       }
