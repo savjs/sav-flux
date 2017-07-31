@@ -169,7 +169,7 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
 function initProxy ({prop, proxys}) {
   prop('proxy', (name, value) => {
     if (typeof name === 'object') { // batch mode
-      for (var x in name) {
+      for (let x in name) {
         if (value === null) {
           delete proxys[x]
         } else {
