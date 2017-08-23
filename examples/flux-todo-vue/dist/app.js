@@ -617,19 +617,19 @@ function initDeclare (ref) {
         }
       }
     }
-    // if (mod.proxys) {
-    //   for(let action in mod.proxys) {
-    //     flux.proxys[action] = mod.proxys[action]
-    //   }
-    // }
+    if (mod.proxys) {
+      for(var action in mod.proxys) {
+        flux.proxys[action] = mod.proxys[action];
+      }
+    }
     if (mod.actions) {
-      for (var action in mod.actions) {
-        if (flux.actions[action]) {
-          throw new Error(("[flux] action exists: " + action))
+      for (var action$1 in mod.actions) {
+        if (flux.actions[action$1]) {
+          throw new Error(("[flux] action exists: " + action$1))
         }
-        flux.actions[action] = mod.actions[action];
+        flux.actions[action$1] = mod.actions[action$1];
         if (flux.opts.noProxy || !probe.Proxy) {
-          proxyFunction(dispatch, action);
+          proxyFunction(dispatch, action$1);
         }
       }
     }
@@ -741,44 +741,50 @@ function normalizeMap (map) {
 }
 
 // 深度比较复制
-function testAndUpdateDeepth (oldState, newState, defineReactive, isVueRoot) {
+function testAndUpdateDepth (oldState, newState, isVueRoot, Vue$$1) {
   Object.keys(newState).forEach(function (name) {
     if (!(name in oldState)) {
       // 新加入的属性
-      return defineReactive(oldState, name, newState[name])
+      return Vue$$1.set(oldState, name, newState[name])
     }
     // 旧的比较赋值
     var newValue = newState[name];
     var oldValue = oldState[name];
+
     if (isObject(newValue)) {
       if (!isObject(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
-        delete oldState[name]; // 需要先删除
-        defineReactive(oldState, name, newValue);
-        if (isVueRoot) { // 必须再通知一下
-          oldValue.__ob__.dep.notify();
-        }
+        Vue$$1.delete(oldState, name);
+        Vue$$1.set(oldState, name, newValue);
       } else { // 继续深度比较赋值
-        testAndUpdateDeepth(oldState[name], newValue, defineReactive);
+        testAndUpdateDepth(oldState[name], newValue, false, Vue$$1);
       }
     } else if (isArray(newValue)) {
       if (!isArray(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
-        delete oldState[name]; // 需要先删除
-        defineReactive(oldState, name, newValue);
-        if (isVueRoot) { // 必须再通知一下
-          oldValue.__ob__.dep.notify();
-        }
+        Vue$$1.delete(oldState, name);
+        Vue$$1.set(oldState, name, newValue);
+
+        // @todo 需要先删除
+        // delete oldState[name]
+        // const ob = oldState.__ob__
+        // defineReactive(ob.value, name, newValue)
+        // if (isVueRoot && ob) { // 必须再通知一下
+        //   ob.dep.notify()
+        // }
       } else {
-        testAndUpdateArray(oldValue, newValue, defineReactive);
+        testAndUpdateArray(oldValue, newValue, Vue$$1);
       }
-    } else { // 简单类型 直接赋值
-      oldState[name] = newState[name];
+    } else { // 简单类型
+      if (oldState[name] !== newState[name]) {
+        oldState[name] = newState[name];
+      }
     }
   });
 }
 
-function testAndUpdateArray (oldValue, newValue, defineReactive) {
+function testAndUpdateArray (oldValue, newValue, Vue$$1) {
   var oldLen = oldValue.length;
   var newLen = newValue.length;
+
   if (oldLen > newLen) { // 多了删掉
     oldValue.splice(newLen, oldLen);
   } else if (oldLen < newLen) { // 少了补上
@@ -791,13 +797,13 @@ function testAndUpdateArray (oldValue, newValue, defineReactive) {
       if (!isObject(oldValue[id])) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         oldValue.splice(id, 1, it);
       } else { // 复制对象
-        testAndUpdateDeepth(oldValue[id], it, defineReactive);
+        testAndUpdateDepth(oldValue[id], it, false, Vue$$1);
       }
     } else if (isArray(it)) {
       if (!isArray(oldValue[id])) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         oldValue.splice(id, 1, it);
       } else {
-        testAndUpdateArray(oldValue[id], it, defineReactive);
+        testAndUpdateArray(oldValue[id], it, Vue$$1);
       }
     } else { // 简单类型 直接赋值
       if (it !== oldValue[id]) {
@@ -816,30 +822,34 @@ function resetStoreVM (Vue$$1, flux, vaf, state) {
   Vue$$1.config.silent = true;
   var vm = vaf.vm = new Vue$$1({ data: {state: state} });
   flux.on('update', vaf.watch = function (newState) {
-    return testAndUpdateDeepth(vm.state, newState, Vue$$1.util.defineReactive, true)
-    // if (isVmGetterMode) {
-    //   let updates = []
-    //   for (let key in newState) {
-    //     if (key in vm.state) {
-    //       vm.state[key] = newState[key]
-    //     } else { // dynamic computed methods
-    //       Vue.util.defineReactive(vm.state, key, newState[key])
-    //       if (vmGetterMaps[key]) {
-    //         vmGetterMaps[key].forEach((vmIt) => {
-    //           if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
-    //             updates.indexOf(vmIt) === -1 && updates.push(vmIt)
-    //             vmIt._computedWatchers[key].update()
-    //           }
-    //         })
-    //       }
-    //     }
-    //   }
-    //   updates.forEach(vm => vm.$forceUpdate())
-    // } else { // old version use mapGetters
-    //   for (let key in newState) {
-    //     vm.state[key] = newState[key]
-    //   }
-    // }
+    if (vaf.deepCopy) {
+      return testAndUpdateDepth(vm.state, newState, true, Vue$$1)
+    }
+    if (isVmGetterMode) {
+      var updates = [];
+      var loop = function ( key ) {
+        if (key in vm.state) {
+          vm.state[key] = newState[key];
+        } else { // dynamic computed methods
+          Vue$$1.util.defineReactive(vm.state, key, newState[key]);
+          if (vmGetterMaps[key]) {
+            vmGetterMaps[key].forEach(function (vmIt) {
+              if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
+                updates.indexOf(vmIt) === -1 && updates.push(vmIt);
+                vmIt._computedWatchers[key].update();
+              }
+            });
+          }
+        }
+      };
+
+      for (var key in newState) loop( key );
+      updates.forEach(function (vm) { return vm.$forceUpdate(); });
+    } else { // old version use mapGetters
+      for (var key$1 in newState) {
+        vm.state[key$1] = newState[key$1];
+      }
+    }
   });
   Vue$$1.config.silent = silent;
   if (oldVm) {
@@ -858,8 +868,10 @@ function FluxVue (ref) {
   var onRouteFail = ref.onRouteFail;
   var payload = ref.payload;
   var deepth = ref.deepth; if ( deepth === void 0 ) deepth = -1;
+  var deepCopy = ref.deepCopy; if ( deepCopy === void 0 ) deepCopy = false;
 
   var vaf = {
+    deepCopy: deepCopy,
     dispatch: flux.dispatch,
     proxy: flux.proxy
   };
@@ -920,7 +932,7 @@ function FluxVue (ref) {
 function getComponentsPayloads (components, depth) {
   var payloads = [];
   if (Array.isArray(components)) {
-    for (var i =0; i < components.length; ++i) {
+    for (var i = 0; i < components.length; ++i) {
       var com = components[i];
       if (com.payload) {
         payloads.push(com);
@@ -1099,63 +1111,63 @@ function syncBinderKeys (binder, keys) {
 var _startIdx = 0;
 
 var TodoModule = {
-	state: {
-		todoList: [],
-	},
-	mutations: {
-		createNew: function createNew (ref, newItem) {
-			var todoList = ref.state.todoList;
+  state: {
+    todoList: []
+  },
+  mutations: {
+    createNew: function createNew (ref, newItem) {
+      var todoList = ref.state.todoList;
 
-			todoList.push(newItem);
-			return { todoList: todoList }
-		},
-		toggleCompleted: function toggleCompleted (ref, todo) {
-			var todoList = ref.state.todoList;
+      todoList.push(newItem);
+      return { todoList: todoList }
+    },
+    toggleCompleted: function toggleCompleted (ref, todo) {
+      var todoList = ref.state.todoList;
 
-			for (var i= 0, l = todoList.length; i < l ; ++ i) {
-				if (todoList[i].id == todo.id) {
-					var it = todoList[i];
-					if (it.isCompleted == todo.isCompleted) {
-						it.isCompleted = !todo.isCompleted;
-						return { todoList: todoList }
-					}
-				}
-			}
-		},
-		removeItemById: function removeItemById (ref, id) {
-			var todoList = ref.state.todoList;
+      for (var i = 0, l = todoList.length; i < l; ++i) {
+        if (todoList[i].id == todo.id) {
+          var it = todoList[i];
+          if (it.isCompleted == todo.isCompleted) {
+            it.isCompleted = !todo.isCompleted;
+            return { todoList: todoList }
+          }
+        }
+      }
+    },
+    removeItemById: function removeItemById (ref, id) {
+      var todoList = ref.state.todoList;
 
-			for (var i= todoList.length -1; i >=0 ; --i) {
-				if (todoList[i].id == id) {
-					todoList.splice(i, 1);
-					return { todoList: todoList }
-				}
-			}
-		},
-		restoreItems: function restoreItems (_, todoList) {
-			if (!Array.isArray(todoList)) {
-				todoList = [];
-			}
-			_startIdx = todoList.length;
-			return {
-				todoList: todoList
-			}
-		}
-	},
-	actions: {
-		createNew: function createNew$1 (ref, title) {
-			var resolve = ref.resolve;
-			var commit = ref.commit;
-			var dispatch = ref.dispatch;
+      for (var i = todoList.length - 1; i >= 0; --i) {
+        if (todoList[i].id == id) {
+          todoList.splice(i, 1);
+          return { todoList: todoList }
+        }
+      }
+    },
+    restoreItems: function restoreItems (_, todoList) {
+      if (!Array.isArray(todoList)) {
+        todoList = [];
+      }
+      _startIdx = todoList.length;
+      return {
+        todoList: todoList
+      }
+    }
+  },
+  actions: {
+    createNew: function createNew$1 (ref, title) {
+      var resolve = ref.resolve;
+      var commit = ref.commit;
+      var dispatch = ref.dispatch;
 
-			var newItem = {};
-			newItem.title = title;
-			newItem.id = ++ _startIdx; 
-			newItem.isCompleted = false;
-			commit.createNew(newItem);
-			return dispatch.onCreateNew(newItem)
-		}
-	}
+      var newItem = {};
+      newItem.title = title;
+      newItem.id = ++_startIdx;
+      newItem.isCompleted = false;
+      commit.createNew(newItem);
+      return dispatch.onCreateNew(newItem)
+    }
+  }
 };
 
 var Todo = {

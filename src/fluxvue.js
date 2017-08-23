@@ -10,30 +10,32 @@ function resetStoreVM (Vue, flux, vaf, state) {
   Vue.config.silent = true
   let vm = vaf.vm = new Vue({ data: {state} })
   flux.on('update', vaf.watch = (newState) => {
-    return testAndUpdateDepth(vm.state, newState, true, Vue)
-    // if (isVmGetterMode) {
-    //   let updates = []
-    //   for (let key in newState) {
-    //     if (key in vm.state) {
-    //       vm.state[key] = newState[key]
-    //     } else { // dynamic computed methods
-    //       Vue.util.defineReactive(vm.state, key, newState[key])
-    //       if (vmGetterMaps[key]) {
-    //         vmGetterMaps[key].forEach((vmIt) => {
-    //           if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
-    //             updates.indexOf(vmIt) === -1 && updates.push(vmIt)
-    //             vmIt._computedWatchers[key].update()
-    //           }
-    //         })
-    //       }
-    //     }
-    //   }
-    //   updates.forEach(vm => vm.$forceUpdate())
-    // } else { // old version use mapGetters
-    //   for (let key in newState) {
-    //     vm.state[key] = newState[key]
-    //   }
-    // }
+    if (vaf.deepCopy) {
+      return testAndUpdateDepth(vm.state, newState, true, Vue)
+    }
+    if (isVmGetterMode) {
+      let updates = []
+      for (let key in newState) {
+        if (key in vm.state) {
+          vm.state[key] = newState[key]
+        } else { // dynamic computed methods
+          Vue.util.defineReactive(vm.state, key, newState[key])
+          if (vmGetterMaps[key]) {
+            vmGetterMaps[key].forEach((vmIt) => {
+              if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
+                updates.indexOf(vmIt) === -1 && updates.push(vmIt)
+                vmIt._computedWatchers[key].update()
+              }
+            })
+          }
+        }
+      }
+      updates.forEach(vm => vm.$forceUpdate())
+    } else { // old version use mapGetters
+      for (let key in newState) {
+        vm.state[key] = newState[key]
+      }
+    }
   })
   Vue.config.silent = silent
   if (oldVm) {
@@ -44,8 +46,9 @@ function resetStoreVM (Vue, flux, vaf, state) {
 
 let Vue
 
-export function FluxVue ({flux, mixinActions = false, injects = [], router, onRouteFail, payload, deepth = -1}) {
+export function FluxVue ({flux, mixinActions = false, injects = [], router, onRouteFail, payload, deepth = -1, deepCopy = false}) {
   let vaf = {
+    deepCopy,
     dispatch: flux.dispatch,
     proxy: flux.proxy
   }
