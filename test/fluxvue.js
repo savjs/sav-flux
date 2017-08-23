@@ -18,7 +18,8 @@ function createFluxVm (state) {
   })
   let vm = new Vue({
     vaf: new FluxVue({
-      flux
+      flux,
+      deepCopy: true
     }),
     getters: [
       'arr',

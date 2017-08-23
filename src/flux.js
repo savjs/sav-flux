@@ -207,7 +207,7 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
       }
     }
     if (mod.proxys) {
-      for(let action in mod.proxys) {
+      for (let action in mod.proxys) {
         flux.proxys[action] = mod.proxys[action]
       }
     }
