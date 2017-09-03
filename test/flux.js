@@ -1,5 +1,5 @@
 import test from 'ava'
-import {Flux} from '../'
+import {Flux} from '../src'
 import {isFunction} from 'sav-util'
 
 test('flux#api', ava => {

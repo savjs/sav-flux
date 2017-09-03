@@ -169,7 +169,7 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
 function initProxy ({prop, proxys}) {
   prop('proxy', (name, value) => {
     if (typeof name === 'object') { // batch mode
-      for (var x in name) {
+      for (let x in name) {
         if (value === null) {
           delete proxys[x]
         } else {
@@ -206,11 +206,11 @@ function initDeclare ({prop, flux, emit, commit, dispatch, updateState}) {
         }
       }
     }
-    // if (mod.proxys) {
-    //   for(let action in mod.proxys) {
-    //     flux.proxys[action] = mod.proxys[action]
-    //   }
-    // }
+    if (mod.proxys) {
+      for (let action in mod.proxys) {
+        flux.proxys[action] = mod.proxys[action]
+      }
+    }
     if (mod.actions) {
       for (let action in mod.actions) {
         if (flux.actions[action]) {

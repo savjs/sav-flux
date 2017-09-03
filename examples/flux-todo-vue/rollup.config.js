@@ -7,9 +7,14 @@ import path from 'path'
 export default {
   entry: path.resolve(__dirname, './boot.js'),
   dest: path.resolve(__dirname, './dist/app.js'),
-  format: 'cjs',
+  format: 'iife',
+  moduleName: 'app',
   sourceMap: false,
   useStrict: false,
+  external: [
+    'vue',
+    'vue-router'
+  ],
   plugins: [
     vue(),
     buble({

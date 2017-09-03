@@ -1,5 +1,5 @@
 import {isFunction, unique} from 'sav-util'
-import {normalizeMap} from './util.js'
+import {normalizeMap, testAndUpdateDepth} from './util.js'
 
 function resetStoreVM (Vue, flux, vaf, state) {
   let oldVm = vaf.vm
@@ -10,6 +10,9 @@ function resetStoreVM (Vue, flux, vaf, state) {
   Vue.config.silent = true
   let vm = vaf.vm = new Vue({ data: {state} })
   flux.on('update', vaf.watch = (newState) => {
+    if (vaf.deepCopy) {
+      return testAndUpdateDepth(vm.state, newState, true, Vue)
+    }
     if (isVmGetterMode) {
       let updates = []
       for (let key in newState) {
@@ -43,8 +46,9 @@ function resetStoreVM (Vue, flux, vaf, state) {
 
 let Vue
 
-export function FluxVue ({flux, mixinActions = false, injects = []}) {
+export function FluxVue ({flux, mixinActions = false, injects = [], router, onRouteFail, payload, deepth = -1, deepCopy = false}) {
   let vaf = {
+    deepCopy,
     dispatch: flux.dispatch,
     proxy: flux.proxy
   }
@@ -69,7 +73,63 @@ export function FluxVue ({flux, mixinActions = false, injects = []}) {
       }
     }
   })
+  if (router) {
+    router.beforeEach((to, from, next) => {
+      let matchedComponents = router.getMatchedComponents(to)
+      if (matchedComponents.length) {
+        let args = {
+          dispatch: vaf.dispatch,
+          route: to,
+          from: from,
+          state: vaf.vm.state
+        }
+        Promise.all(getComponentsPayloads(matchedComponents, deepth).map(Component => {
+          if (payload) {
+            return payload(Component, args, to, from)
+          }
+          return Component.payload(args)
+        })).then(next).catch((err) => {
+          if (!(err instanceof Error)) {
+            return next(err)
+          }
+          if (onRouteFail) {
+            return onRouteFail(to, from, next, err)
+          } else {
+            next(false)
+          }
+        })
+      } else {
+        next()
+      }
+    })
+  }
   return vaf
+}
+
+function getComponentsPayloads (components, depth) {
+  let payloads = []
+  if (Array.isArray(components)) {
+    for (let i = 0; i < components.length; ++i) {
+      let com = components[i]
+      if (com.payload) {
+        payloads.push(com)
+      }
+      if (depth && com.components) {
+        payloads = payloads.concat(getComponentsPayloads(com.components, depth--))
+      }
+    }
+  } else {
+    for (let comName in components) {
+      let com = components[comName]
+      if (com.payload) {
+        payloads.push(com)
+      }
+      if (depth && com.components) {
+        payloads = payloads.concat(getComponentsPayloads(com.components, depth--))
+      }
+    }
+  }
+  return payloads
 }
 
 let vmGetterMaps = {}

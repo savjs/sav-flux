@@ -27,6 +27,13 @@
 				count: 0
 			}
 		},
+		payload ({dispatch}) {
+			return dispatch('restoreItems', [{
+				title: 'payload-todo',
+				id: 1,
+				isCompleted: true
+			}])
+		},
 		proxys: {
 			onCreateNew ({resolve}, item) {
 				this.count++

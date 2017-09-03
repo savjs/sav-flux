@@ -7,7 +7,7 @@ import {probe, isFunction} from 'sav-util'
 probe.Proxy = false
 
 import test from 'ava'
-import {Flux} from '../'
+import {Flux} from '../src'
 
 test('flux no Proxy', ava => {
   const flux = new Flux()
