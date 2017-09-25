@@ -1,7 +1,7 @@
-import buble from 'rollup-plugin-buble'
+import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
-import vue from 'rollup-plugin-vue2'
+import vue from 'rollup-plugin-vue'
 import path from 'path'
 
 export default {
@@ -17,8 +17,13 @@ export default {
   ],
   plugins: [
     vue(),
-    buble({
-      objectAssign: 'Object.assign'
+    babel({
+      babelrc: false,
+      externalHelpers: false,
+      exclude: 'node_modules/**',
+      'plugins': [
+        ['transform-object-rest-spread', { 'useBuiltIns': true }]
+      ]
     }),
     resolve({
       jsnext: true,

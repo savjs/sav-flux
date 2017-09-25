@@ -15,20 +15,18 @@
 </template>
 
 <script type="text/javascript">
-	import {mapGetters } from '../../src'
-
 	export default {
-		computed: mapGetters([
+		getters:[
 			'todoList'
-		]),
+		],
 		data: function () {
 			return {
 				newText: '',
 				count: 0
 			}
 		},
-		payload ({dispatch}) {
-			return dispatch('restoreItems', [{
+		payload (route, {dispatch}) {
+			dispatch('restoreItems', [{
 				title: 'payload-todo',
 				id: 1,
 				isCompleted: true

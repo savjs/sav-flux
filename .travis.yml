@@ -5,8 +5,5 @@ deploy:
   provider: npm
   email: 86287344@qq.com
   skip_cleanup: true
-  tag: dev
-  on:
-    branch: dev
   api_key:
     secure: bXCJIlYKFTMWFLchglif4pYum5ZRC9fkrL+weELe2j/GJwbbtbRtg5FM3coU08I2u2/dX9lFNqEMtJTBifoch5TU/T827mxRbvv6zVkfco7ABpga+8tFrBf28IXCdkqIAA0l0jIJhaOp511T4cE9sc8qioQfKsZ51oWCee138n1o1gg5fUIHvWeyUHcOUIc/2weoRIICa3pwTKk6aC5+0tuxuBC8pCVTzXYiI0G/X0eSBCI2EJqO76XbDmfNRzN0ofEJAG4PzySam/qDMMVIwiCsUDeso8EjG3XBeCtmpcTtWPOxhyoMckVE3/6vDcaPgN2yM6FMZC3Njw3kM3P65ebGBpyNWRvh8NxVSK6WNRWwJPhL6V9Nce6vOoei2rLiy0Rw/t40lbu4HIlm7CNzoB3wmMlQlYOsThdyZEvTXM9dhuiC9HwUj3EXrAoolfPyeNGJB7vuVPrmjBF02CjhIzBVc77MAjjNa7n7CWskvHz6jh0JgfItjhbILZ1ErBAF2upRRmnzZILfS8RRNDlcrwobY+Kkh5kt0BuhEqNdOTRS5FHw/P0LMqAt9TdRCL/t/Zib0185e7XMxg8+MTK6CKZAifYS73lb9iH+AMeDiov02xtlBaPDi4LJElbToisqwzWwk6GYRA7DvPB7k7EgWRWSMAbrbpbZe2SVIFJ9Ejg=

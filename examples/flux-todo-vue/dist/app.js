@@ -6,7 +6,7 @@ function toStringType(val) {
   return Object.prototype.toString.call(val).slice(8, -1);
 }
 
-var isArray = Array.isArray;
+const isArray = Array.isArray;
 
 function isBoolean(arg) {
   return typeof arg === 'boolean';
@@ -32,7 +32,7 @@ function defined(val) {
   return val !== 'undefined';
 }
 
-var probe = {
+let probe = {
   Map: defined(typeof Map),
   Proxy: defined(typeof Proxy),
   MessageChannel: defined(typeof MessageChannel),
@@ -52,13 +52,13 @@ var probe = {
 
 // jsuri https://code.google.com/r/jonhwendell-jsuri/
 // https://username:password@www.test.com:8080/path/index.html?this=that&some=thing#content
-var REKeys = ['source', 'protocol', 'authority', 'userInfo', 'user', 'password', 'host', 'port', 'relative', 'path', 'directory', 'file', 'query', 'anchor'];
-var URL_RE = /^(?:(?![^:@]+:[^:@/]*@)([^:/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#/]*\.[^?#/.]+(?:[?#]|$)))*\/?)?([^?#/]*))(?:\?([^#]*))?(?:#(.*))?)/;
+const REKeys = ['source', 'protocol', 'authority', 'userInfo', 'user', 'password', 'host', 'port', 'relative', 'path', 'directory', 'file', 'query', 'anchor'];
+const URL_RE = /^(?:(?![^:@]+:[^:@/]*@)([^:/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#/]*\.[^?#/.]+(?:[?#]|$)))*\/?)?([^?#/]*))(?:\?([^#]*))?(?:#(.*))?)/;
 
 function parseUrl(str) {
-  var _uri = {};
-  var _m = URL_RE.exec(str || '');
-  var _i = REKeys.length;
+  let _uri = {};
+  let _m = URL_RE.exec(str || '');
+  let _i = REKeys.length;
   while (_i--) {
     _uri[REKeys[_i]] = _m[_i] || '';
   }
@@ -66,26 +66,26 @@ function parseUrl(str) {
 }
 
 function stringifyUrl(uri) {
-  var str = '';
+  let str = '';
   if (uri) {
     if (uri.host) {
-      if (uri.protocol) { str += uri.protocol + ':'; }
+      if (uri.protocol) str += uri.protocol + ':';
       str += '//';
-      if (uri.user) { str += uri.user + ':'; }
-      if (uri.password) { str += uri.password + '@'; }
+      if (uri.user) str += uri.user + ':';
+      if (uri.password) str += uri.password + '@';
       str += uri.host;
-      if (uri.port) { str += ':' + uri.port; }
+      if (uri.port) str += ':' + uri.port;
     }
     str += uri.path || '';
-    if (uri.query) { str += '?' + uri.query; }
-    if (uri.anchor) { str += '#' + uri.anchor; }
+    if (uri.query) str += '?' + uri.query;
+    if (uri.anchor) str += '#' + uri.anchor;
   }
   return str;
 }
 
-var _encode = encodeURIComponent;
-var r20 = /%20/g;
-var rbracket = /\[]$/;
+const _encode = encodeURIComponent;
+const r20 = /%20/g;
+const rbracket = /\[]$/;
 
 function buildParams(prefix, obj, add) {
   if (Array.isArray(obj)) {
@@ -101,7 +101,7 @@ function buildParams(prefix, obj, add) {
     });
   } else if (isObject(obj)) {
     // Serialize object item.
-    for (var name in obj) {
+    for (let name in obj) {
       buildParams(prefix + '[' + name + ']', obj[name], add);
     }
   } else {
@@ -112,21 +112,19 @@ function buildParams(prefix, obj, add) {
 
 // # http://stackoverflow.com/questions/1131630/the-param-inverse-function-in-javascript-jquery
 // a[b]=1&a[c]=2&d[]=3&d[]=4&d[2][e]=5 <=> { a: { b: 1, c: 2 }, d: [ 3, 4, { e: 5 } ] }
-function parseQuery(str, opts) {
-  if ( opts === void 0 ) opts = {};
-
-  var _querys = {};
+function parseQuery(str, opts = {}) {
+  let _querys = {};
   decodeURIComponent(str || '').replace(/\+/g, ' ')
   // (optional no-capturing & )(key)=(value)
   .replace(/(?:^|&)([^&=]*)=?([^&]*)/g, function ($0, _name, _value) {
     if (_name) {
-      var _path, _acc, _tmp, _ref;
+      let _path, _acc, _tmp, _ref;
       (_path = []).unshift(_name = _name.replace(/\[([^\]]*)]/g, function ($0, _k) {
         _path.push(_k);
         return '';
       }));
       _ref = _querys;
-      for (var j = 0; j < _path.length - 1; j++) {
+      for (let j = 0; j < _path.length - 1; j++) {
         _acc = _path[j];
         _tmp = _path[j + 1];
         if (!_ref[_acc]) {
@@ -159,28 +157,26 @@ function parseQuery(str, opts) {
 
 function stringifyQuery(query) {
   // # http://api.jquery.com/jQuery.param
-  var _add = function (key, value) {
+  let _add = (key, value) => {
     /* jshint eqnull:true */
     _str.push(_encode(key) + '=' + (value === null || value === undefined ? '' : _encode(value)));
     // _str.push(( key ) + "=" +  (value == null ? "" : ( value )));
   };
-  var _str = [];
+  let _str = [];
   query || (query = {});
-  for (var x in query) {
+  for (let x in query) {
     buildParams(x, query[x], _add);
   }
   return _str.join('&').replace(r20, '+');
 }
 
 function extend() {
-  var arguments$1 = arguments;
-
   // form jQuery & remove this
-  var options, name, src, copy, copyIsArray, clone;
-  var target = arguments[0] || {};
-  var i = 1;
-  var length = arguments.length;
-  var deep = false;
+  let options, name, src, copy, copyIsArray, clone;
+  let target = arguments[0] || {};
+  let i = 1;
+  let length = arguments.length;
+  let deep = false;
   if (isBoolean(target)) {
     deep = target;
     target = arguments[i] || {};
@@ -190,7 +186,7 @@ function extend() {
     target = {};
   }
   for (; i < length; i++) {
-    options = arguments$1[i];
+    options = arguments[i];
     /* jshint eqnull:true */
     if (options != null) {
       for (name in options) {
@@ -225,24 +221,22 @@ function clone(val) {
 }
 
 function prop(target, key, value) {
-  Object.defineProperty(target, key, { value: value, writable: true, configurable: true });
+  Object.defineProperty(target, key, { value, writable: true, configurable: true });
 }
 
 function makePropFunc(target, propName) {
   if (!target._props_) {
     prop(target, '_props_', ['_props_']);
   }
-  var props = target._props_;
-  return function (key, value) {
+  let props = target._props_;
+  return (key, value) => {
     if (isObject(key)) {
-      for (var name in key) {
-        var obj;
-        Object.defineProperty(target, name, ( obj = { writable: true, configurable: true }, obj[("" + propName)] = key[name], obj ));
+      for (let name in key) {
+        Object.defineProperty(target, name, { [`${propName}`]: key[name], writable: true, configurable: true });
         props.push(name);
       }
     } else {
-      var descriptor = { configurable: true };
-      descriptor[("" + propName)] = value;
+      let descriptor = { [`${propName}`]: value, configurable: true };
       if (propName === 'value') {
         descriptor.writable = true;
       }
@@ -253,20 +247,20 @@ function makePropFunc(target, propName) {
 }
 
 function bindEvent(target) {
-  var _events = {};
-  prop(target, 'on', function (event, fn) {
+  let _events = {};
+  prop(target, 'on', (event, fn) => {
     (_events[event] || (_events[event] = [])).push(fn);
   });
 
-  prop(target, 'before', function (event, fn) {
+  prop(target, 'before', (event, fn) => {
     (_events[event] || (_events[event] = [])).unshift(fn);
   });
 
-  prop(target, 'off', function (event, fn) {
+  prop(target, 'off', (event, fn) => {
     if (_events[event]) {
-      var list = _events[event];
+      let list = _events[event];
       if (fn) {
-        var pos = list.indexOf(fn);
+        let pos = list.indexOf(fn);
         if (pos !== -1) {
           list.splice(pos, 1);
         }
@@ -276,33 +270,27 @@ function bindEvent(target) {
     }
   });
 
-  prop(target, 'once', function (event, fn) {
-    var once = function () {
-      var args = [], len = arguments.length;
-      while ( len-- ) args[ len ] = arguments[ len ];
-
+  prop(target, 'once', (event, fn) => {
+    let once = (...args) => {
       target.off(event, fn);
-      fn.apply(void 0, args);
+      fn(...args);
     };
     target.on(event, once);
   });
 
-  prop(target, 'subscribe', function (event, fn) {
+  prop(target, 'subscribe', (event, fn) => {
     target.on(event, fn);
-    return function () {
+    return () => {
       target.off(event, fn);
     };
   });
 
-  prop(target, 'emit', function (event) {
-    var args = [], len = arguments.length - 1;
-    while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
-
+  prop(target, 'emit', (event, ...args) => {
     if (_events[event]) {
-      var list = _events[event].slice();
-      var fn;
+      let list = _events[event].slice();
+      let fn;
       while (fn = list.shift()) {
-        fn.apply(void 0, args);
+        fn(...args);
       }
     }
   });
@@ -312,10 +300,10 @@ function unique(arr) {
   if (!Array.isArray(arr)) {
     throw new TypeError('array-unique expects an array.');
   }
-  var len = arr.length;
-  var i = -1;
+  let len = arr.length;
+  let i = -1;
   while (i++ < len) {
-    var j = i + 1;
+    let j = i + 1;
     for (; j < arr.length; ++j) {
       if (arr[i] === arr[j]) {
         arr.splice(j--, 1);
@@ -329,12 +317,12 @@ function isPromiseLike(obj) {
   return !!(obj && obj.then);
 }
 
-var PROMISE = Promise;
-var promise = {
+let PROMISE = Promise;
+let promise = {
   resolve: PROMISE.resolve.bind(PROMISE),
   reject: PROMISE.reject.bind(PROMISE),
   all: PROMISE.all.bind(PROMISE),
-  then: function (fn, reject) {
+  then: (fn, reject) => {
     // @NOTICE deprecated to be removed next
     return new PROMISE(fn, reject);
   }
@@ -343,9 +331,9 @@ var promise = {
 /**
  * Camelize a hyphen-delmited string.
  */
-var camelCaseRE = /[-_](\w)/g;
+const camelCaseRE = /[-_](\w)/g;
 function camelCase(str) {
-  return lcfirst(str.replace(camelCaseRE, function (_, c) { return c ? c.toUpperCase() : ''; }));
+  return lcfirst(str.replace(camelCaseRE, (_, c) => c ? c.toUpperCase() : ''));
 }
 
 /**
@@ -355,232 +343,462 @@ function lcfirst(str) {
   return str.charAt(0).toLowerCase() + str.slice(1);
 }
 
+/**
+ * ajax 方法
+ * @param  {Object}   opts 请求对象
+ * {
+ *     method:"GET",
+ *     dataType:"JSON",
+ *     headers:{},
+ *     url:"",
+ *     data:{},
+ * }
+ * @param  {Function} next 回调
+ * @return {XMLHttpRequest}        xhr对象
+ */
+function ajax(opts, next) {
+  let method = (opts.method || 'GET').toUpperCase();
+  let dataType = (opts.dataType || 'JSON').toUpperCase();
+  let timeout = opts.timeout;
+  /* global XMLHttpRequest */
+  let req = new XMLHttpRequest();
+  let data = null;
+  let isPost = method === 'POST';
+  let isGet = method === 'GET';
+  let isFormData = false;
+  let emit = function (err, data, headers) {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+    req.onload = req.onreadystatechange = req.onerror = null;
+    if (next) {
+      let tmp = next;
+      next = null;
+      tmp(err, data, headers);
+    }
+  };
+  if (isGet) {
+    if (opts.data) {
+      let u = parseUrl(opts.url);
+      let q = parseQuery(u.query);
+      for (let x in opts.data) {
+        q[x] = opts.data[x];
+      }
+      u.query = stringifyQuery(q);
+      opts.url = stringifyUrl(u);
+      opts.data = null;
+    }
+  } else if (isPost) {
+    data = opts.data;
+    /* global FormData */
+    if (probe.FormData) {
+      isFormData = data instanceof FormData;
+      if (!isFormData) {
+        data = stringifyQuery(data);
+      }
+    }
+  }
+  if (timeout) {
+    timeout = setTimeout(function () {
+      req.abort();
+      emit(new Error('error_timeout'));
+    }, timeout);
+  }
+  try {
+    opts.xhr && opts.xhr(req);
+    if (dataType === 'BINARY') {
+      req.responseType = 'arraybuffer';
+    }
+    req.open(method, opts.url, true);
+    if (opts.headers) {
+      for (let x in opts.headers) {
+        req.setRequestHeader(x, opts.headers[x]);
+      }
+    }
+    if (isPost && !isFormData) {
+      req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    }
+    if (opts.headerOnly) {
+      req.onreadystatechange = function () {
+        // console.log('state', req.readyState, req);
+        if (req.readyState === 2) {
+          // HEADERS_RECEIVED
+          let headers = parseHeaders(req.getAllResponseHeaders(), opts.camelHeaders);
+          req.abort();
+          emit(null, undefined, headers);
+        }
+      };
+    }
+    req.onload = function () {
+      // if(req.readyState != 4) return;
+      if ([200, 304, 206, 0].indexOf(req.status) === -1) {
+        // error
+        emit(new Error('error_status_' + req.status));
+      } else {
+        let data = req.response;
+        try {
+          if (dataType === 'JSON') {
+            data = JSON.parse(req.responseText);
+          } else if (dataType === 'XML') {
+            data = req.responseXML;
+          } else if (dataType === 'TEXT') {
+            data = req.responseText;
+          } else if (dataType === 'BINARY') {
+            let arrayBuffer = new Uint8Array(data);
+            let str = '';
+            for (let i = 0; i < arrayBuffer.length; i++) {
+              str += String.fromCharCode(arrayBuffer[i]);
+            }
+            data = str;
+          }
+        } catch (err) {
+          return emit(err);
+        }
+        emit(null, data, parseHeaders(req.getAllResponseHeaders(), opts.camelHeaders));
+      }
+    };
+    req.onerror = function (e) {
+      emit(new Error('error_network'));
+    };
+    // 进度
+    if (opts.onprogress && !opts.headerOnly) {
+      req.onloadend = req.onprogress = function (e) {
+        let info = {
+          total: e.total,
+          loaded: e.loaded,
+          percent: e.total ? Math.trunc(100 * e.loaded / e.total) : 0
+        };
+        if (e.type === 'loadend') {
+          info.percent = 100;
+        } else if (e.total === e.loaded) {
+          return;
+        }
+        if (e.total < e.loaded) {
+          info.total = info.loaded;
+        }
+        if (info.percent === 0) {
+          return;
+        }
+        opts.onprogress(info);
+      };
+    }
+    req.send(data);
+  } catch (e) {
+    emit(e);
+  }
+  return req;
+}
+
 function parseHeaders(str, camelHeaders) {
-  var ret = {};
+  let ret = {};
   str.trim().split('\n').forEach(function (key) {
     key = key.replace(/\r/g, '');
-    var arr = key.split(': ');
-    var name = arr.shift().toLowerCase();
+    let arr = key.split(': ');
+    let name = arr.shift().toLowerCase();
     ret[camelHeaders ? camelCase(name) : name] = arr.shift();
   });
   return ret;
 }
 
-function Flux (opts) {
-  if ( opts === void 0 ) opts = {strict: true};
+function compose(middleware) {
+  if (!Array.isArray(middleware)) throw new TypeError('Middleware stack must be an array!');
+  for (const fn of middleware) {
+    if (typeof fn !== 'function') throw new TypeError('Middleware must be composed of functions!');
+  }
 
-  var flux = this;
-  var prop$$1 = initProp(flux);
+  /**
+   * @param {Object} context
+   * @return {Promise}
+   * @api public
+   */
+
+  return function (context, next) {
+    // last called middleware #
+    let index = -1;
+    return dispatch(0);
+    function dispatch(i) {
+      if (i <= index) return Promise.reject(new Error('next() called multiple times'));
+      index = i;
+      let fn = middleware[i];
+      if (i === middleware.length) fn = next;
+      if (!fn) return Promise.resolve();
+      try {
+        return Promise.resolve(fn(context, function next() {
+          return dispatch(i + 1);
+        }));
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    }
+  };
+}
+
+class Request {
+  constructor(opts) {
+    this.opts = {
+      baseUrl: '/',
+      stripHeaders: true, // 不返回头部信息
+      handleError: false, // 捕获异常, emit('error')
+      ajax
+    };
+    this.invokeQueues = [this.invoke.bind(this)];
+    this.invoker = null;
+    bindEvent(this);
+    if (opts) {
+      this.setOptions(opts);
+    }
+  }
+  setOptions(opts) {
+    this.opts = Object.assign({}, this.opts, { opts });
+  }
+  before(fn) {
+    this.invoker = null;
+    this.invokeQueues.unshift(fn);
+  }
+  after(fn) {
+    this.invoker = null;
+    this.invokeQueues.push(fn);
+  }
+  get(url, options) {
+    return this.request(Object.assign({ method: 'GET', url }, options));
+  }
+  post(url, options) {
+    return this.request(Object.assign({ method: 'POST', url }, options));
+  }
+  put(url, options) {
+    return this.request(Object.assign({ method: 'PUT', url }, options));
+  }
+  patch(url, options) {
+    return this.request(Object.assign({ method: 'PATCH', url }, options));
+  }
+  del(url, options) {
+    return this.request(Object.assign({ method: 'DELETE', url }, options));
+  }
+  request(options) {
+    options = Object.assign({
+      url: '',
+      headers: {}
+    }, options);
+    if (!/^(http(s?):)?\/\//i.test(options.url)) {
+      options.url = this.opts.baseUrl + options.url;
+    }
+    if (!this.invoker) {
+      this.invoker = compose(this.invokeQueues);
+    }
+    let { invoker } = this;
+    let { stripHeaders, handleError } = this.opts;
+    let ctx = { request: options };
+    let res = invoker(ctx);
+    if (stripHeaders) {
+      res = res.then(() => ctx.data);
+    }
+    if (handleError) {
+      return res.catch(err => {
+        this.emit('error', err);
+      });
+    }
+    return res;
+  }
+  invoke(ctx, next$$1) {
+    return new Promise((resolve, reject) => {
+      ctx.xhr = ajax(ctx.request, (err, data, headers) => {
+        if (err) {
+          return reject(err);
+        }
+        try {
+          ctx.response = {
+            data,
+            headers
+          };
+          this.emit('response', ctx);
+        } catch (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+      this.emit('request', ctx);
+    }).then(next$$1);
+  }
+}
+
+function Flux(opts = { strict: true }) {
+  let flux = this;
+  let prop$$1 = initProp(flux);
   prop$$1('flux', flux);
   prop$$1('prop', prop$$1);
   prop$$1('mutations', {});
   prop$$1('actions', {});
   prop$$1('proxys', {});
   prop$$1('opts', opts);
-  initUse(flux)([initUtil, bindEvent, initPromise, initCloneThen,
-    initState, initCommit, initDispatch, initProxy,
-    initDeclare]);
+  initUse(flux)([initUtil, bindEvent, initPromise, initCloneThen, initState, initCommit, initDispatch, initProxy, initDeclare]);
 }
 
-function initProp (flux) {
-  var prop$$1 = function (key, value, opts) {
-    if ( opts === void 0 ) opts = {};
-
+function initProp(flux) {
+  let prop$$1 = (key, value, opts = {}) => {
     opts.value = value;
     Object.defineProperty(flux, key, opts);
   };
-  prop$$1.get = function (key, value, opts) {
-    if ( opts === void 0 ) opts = {};
-
+  prop$$1.get = (key, value, opts = {}) => {
     opts.get = value;
     Object.defineProperty(flux, key, opts);
   };
-  return prop$$1
+  return prop$$1;
 }
 
-function initUse (ref) {
-  var flux = ref.flux;
-  var prop$$1 = ref.prop;
-
-  var use = function (plugin, opts) {
+function initUse({ flux, prop: prop$$1 }) {
+  let use = (plugin, opts) => {
     if (Array.isArray(plugin)) {
-      return plugin.forEach(function (plugin) {
+      return plugin.forEach(plugin => {
         flux.use(plugin, opts);
-      })
+      });
     }
     plugin(flux, opts);
   };
   prop$$1('use', use);
-  return use
+  return use;
 }
 
-function initUtil (ref) {
-  var prop$$1 = ref.prop;
-  var opts = ref.opts;
-
+function initUtil({ prop: prop$$1, opts }) {
   prop$$1('clone', clone);
   prop$$1('extend', extend);
-  prop$$1('opt', function (name, defaultVal) {
-    if ( defaultVal === void 0 ) defaultVal = null;
-
-    return name in opts ? opts[name] : defaultVal
+  prop$$1('request', new Request());
+  prop$$1('opt', (name, defaultVal = null) => {
+    return name in opts ? opts[name] : defaultVal;
   });
 }
 
-function initState (ref) {
-  var prop$$1 = ref.prop;
-  var emit = ref.emit;
-  var cloneThen = ref.cloneThen;
-  var clone$$1 = ref.clone;
-  var resolve = ref.resolve;
-
-  var state = {};
-  prop$$1.get('state', function () { return state; }, {
-    set: function set () {
-      throw new Error('[flux] Use flux.replaceState() to explicit replace store state.')
+function initState({ prop: prop$$1, emit, cloneThen, clone: clone$$1, resolve }) {
+  let state = {};
+  prop$$1.get('state', () => state, {
+    set() {
+      throw new Error('[flux] Use flux.replaceState() to explicit replace store state.');
     }
   });
-  prop$$1('getState', function () { return clone$$1(state); });
+  prop$$1('getState', () => clone$$1(state));
 
-  prop$$1('replaceState', function (newState) {
-    var stateStr = JSON.stringify(newState);
+  prop$$1('replaceState', newState => {
+    let stateStr = JSON.stringify(newState);
     newState = JSON.parse(stateStr);
-    for (var x in state) {
+    for (let x in state) {
       delete state[x];
     }
-    for (var x$1 in newState) {
-      state[x$1] = newState[x$1];
+    for (let x in newState) {
+      state[x] = newState[x];
     }
-    return Promise.resolve(JSON.parse(stateStr)).then(function (cloneState) {
+    return Promise.resolve(JSON.parse(stateStr)).then(cloneState => {
       emit('replace', cloneState);
-      return cloneState
-    })
+      return cloneState;
+    });
   });
 
-  prop$$1('updateState', function (changedState, slice) {
+  prop$$1('updateState', (changedState, slice) => {
     if (typeof changedState !== 'object') {
-      throw new Error('[flux] updateState require new state as object')
+      throw new Error('[flux] updateState require new state as object');
     }
     if (changedState !== state) {
-      Object.keys(changedState).map(function (key) {
+      Object.keys(changedState).map(key => {
         state[key] = changedState[key];
       });
     }
     if (!slice) {
-      return cloneThen(changedState).then(function (cloneState) {
+      return cloneThen(changedState).then(cloneState => {
         emit('update', cloneState);
-        return cloneState
-      })
+        return cloneState;
+      });
     }
-    return resolve()
+    return resolve();
   });
 }
 
-function initCommit (ref) {
-  var prop$$1 = ref.prop;
-  var flux = ref.flux;
-  var updateState = ref.updateState;
-  var resolve = ref.resolve;
-
-  var commit = function (type, payload) {
-    var mutations = flux.mutations;
+function initCommit({ prop: prop$$1, flux, updateState, resolve }) {
+  let commit = (type, payload) => {
+    let { mutations } = flux;
     if (typeof type === 'object') {
       payload = type;
       type = type.type;
     }
-    var entry = mutations[type];
+    let entry = mutations[type];
     if (!entry) {
-      throw new Error('[flux] unknown mutation : ' + type)
+      throw new Error('[flux] unknown mutation : ' + type);
     }
-    var state = flux.state;
-    var ret = entry(flux, payload);
-    var update = function (ret) {
+    let state = flux.state;
+    let ret = entry(flux, payload);
+    let update = ret => {
       if (ret) {
         if (ret === state) {
-          throw new Error('[flux] commit require new object rather than old state')
+          throw new Error('[flux] commit require new object rather than old state');
         }
         if (typeof ret !== 'object') {
-          throw new Error('[flux] commit require new object')
+          throw new Error('[flux] commit require new object');
         }
-        return updateState(ret)
+        return updateState(ret);
       }
-      return resolve()
+      return resolve();
     };
     if (isPromiseLike(ret)) {
-      return ret.then(update)
+      return ret.then(update);
     } else {
-      return update(ret)
+      return update(ret);
     }
   };
   prop$$1('commit', flux.opts.noProxy ? commit : proxyApi(commit));
 }
 
-function initDispatch (ref) {
-  var prop$$1 = ref.prop;
-  var flux = ref.flux;
-  var commit = ref.commit;
-  var resolve = ref.resolve;
-  var reject = ref.reject;
-  var opts = ref.opts;
-  var cloneThen = ref.cloneThen;
-
-  var dispatch = function (action, payload) {
-    var actions = flux.actions;
-    var mutations = flux.mutations;
-    var proxys = flux.proxys;
-    var entry = action in actions && actions[action] ||
-      action in mutations && function (_, payload) {
-        return commit(action, payload)
-      };
-    if (!entry && (proxys[action])) {
+function initDispatch({ prop: prop$$1, flux, commit, resolve, reject, opts, cloneThen }) {
+  let dispatch = (action, payload) => {
+    let { actions, mutations, proxys } = flux;
+    let entry = action in actions && actions[action] || action in mutations && function (_, payload) {
+      return commit(action, payload);
+    };
+    if (!entry && proxys[action]) {
       entry = proxys[action];
     }
     if (!entry) {
-      return reject('[flux] unknown action : ' + action)
+      return reject('[flux] unknown action : ' + action);
     }
-    var err, ret;
+    let err, ret;
     try {
       ret = entry(flux, payload);
     } catch (e) {
       err = e;
     }
     if (err) {
-      return reject(err)
+      return reject(err);
     }
     if (!isPromiseLike(ret)) {
       ret = resolve(ret);
     }
-        // make copy
-    return opts.strict ? ret.then(function (data) {
+    // make copy
+    return opts.strict ? ret.then(data => {
       if (Array.isArray(data) || typeof data === 'object') {
         if (data.__clone) {
-          return resolve(data)
+          return resolve(data);
         }
-        return cloneThen(data).then(function (newData) {
-          Object.defineProperty(newData, '__clone', {value: true});
-          return resolve(newData)
-        })
+        return cloneThen(data).then(newData => {
+          Object.defineProperty(newData, '__clone', { value: true });
+          return resolve(newData);
+        });
       }
-      return resolve(data)
-    }) : ret
+      return resolve(data);
+    }) : ret;
   };
   prop$$1('dispatch', flux.opts.noProxy ? dispatch : proxyApi(dispatch));
 }
 
-function initProxy (ref) {
-  var prop$$1 = ref.prop;
-  var proxys = ref.proxys;
-
-  prop$$1('proxy', function (name, value) {
-    if (typeof name === 'object') { // batch mode
-      for (var x in name) {
+function initProxy({ prop: prop$$1, proxys }) {
+  prop$$1('proxy', (name, value) => {
+    if (typeof name === 'object') {
+      // batch mode
+      for (let x in name) {
         if (value === null) {
           delete proxys[x];
         } else {
           proxys[x] = name[x];
         }
       }
-    } else { // once mode
+    } else {
+      // once mode
       if (value === null) {
         delete proxys[name];
       } else {
@@ -590,25 +808,18 @@ function initProxy (ref) {
   });
 }
 
-function initDeclare (ref) {
-  var prop$$1 = ref.prop;
-  var flux = ref.flux;
-  var emit = ref.emit;
-  var commit = ref.commit;
-  var dispatch = ref.dispatch;
-  var updateState = ref.updateState;
-
-  var declare = function (mod) {
+function initDeclare({ prop: prop$$1, flux, emit, commit, dispatch, updateState }) {
+  let declare = mod => {
     if (!mod) {
-      return
+      return;
     }
     if (Array.isArray(mod)) {
-      return mod.forEach(declare)
+      return mod.forEach(declare);
     }
     if (mod.mutations) {
-      for (var mutation in mod.mutations) {
+      for (let mutation in mod.mutations) {
         if (flux.mutations[mutation]) {
-          throw new Error(("[flux] mutation exists: " + mutation))
+          throw new Error(`[flux] mutation exists: ${mutation}`);
         }
         flux.mutations[mutation] = mod.mutations[mutation];
         if (flux.opts.noProxy || !probe.Proxy) {
@@ -618,26 +829,26 @@ function initDeclare (ref) {
       }
     }
     if (mod.proxys) {
-      for(var action in mod.proxys) {
+      for (let action in mod.proxys) {
         flux.proxys[action] = mod.proxys[action];
       }
     }
     if (mod.actions) {
-      for (var action$1 in mod.actions) {
-        if (flux.actions[action$1]) {
-          throw new Error(("[flux] action exists: " + action$1))
+      for (let action in mod.actions) {
+        if (flux.actions[action]) {
+          throw new Error(`[flux] action exists: ${action}`);
         }
-        flux.actions[action$1] = mod.actions[action$1];
+        flux.actions[action] = mod.actions[action];
         if (flux.opts.noProxy || !probe.Proxy) {
-          proxyFunction(dispatch, action$1);
+          proxyFunction(dispatch, action);
         }
       }
     }
     if (mod.state) {
-      var states = flux.state;
-      for (var state in mod.state) {
+      let states = flux.state;
+      for (let state in mod.state) {
         if (state in states) {
-          throw new Error(("[flux] state exists: " + state))
+          throw new Error(`[flux] state exists: ${state}`);
         }
       }
       updateState(mod.state, true);
@@ -647,70 +858,59 @@ function initDeclare (ref) {
   prop$$1('declare', declare);
 }
 
-function proxyFunction (target, name) {
-  target[name] = function (payload) {
-    return target(name, payload)
+function proxyFunction(target, name) {
+  target[name] = payload => {
+    return target(name, payload);
   };
 }
 
-function proxyApi (entry) {
+function proxyApi(entry) {
   if (probe.Proxy) {
     return new Proxy(entry, {
-      get: function get (target, name) {
-        return function (payload) {
-          return entry(name, payload)
-        }
+      get(target, name) {
+        return payload => {
+          return entry(name, payload);
+        };
       }
-    })
+    });
   }
-  return entry
+  return entry;
 }
 
-function initPromise (ref) {
-  var prop$$1 = ref.prop;
-
-  var PROMISE = Promise;
+function initPromise({ prop: prop$$1 }) {
+  let PROMISE = Promise;
   prop$$1('resolve', PROMISE.resolve.bind(PROMISE));
   prop$$1('reject', PROMISE.reject.bind(PROMISE));
   prop$$1('all', PROMISE.all.bind(PROMISE));
-  prop$$1('then', function (fn) {
-    return new PROMISE(fn)
+  prop$$1('then', fn => {
+    return new PROMISE(fn);
   });
 }
 
-function initCloneThen (ref) {
-  var prop$$1 = ref.prop;
-  var clone$$1 = ref.clone;
-  var resolve = ref.resolve;
-  var then = ref.then;
-
+function initCloneThen({ prop: prop$$1, clone: clone$$1, resolve, then }) {
   if (!probe.MessageChannel) {
-    prop$$1('cloneThen', function (value) {
-      return resolve().then(function () { return resolve(clone$$1(value)); })
+    prop$$1('cloneThen', value => {
+      return resolve().then(() => resolve(clone$$1(value)));
     });
-    return
+    return;
   }
   /* global MessageChannel */
-  var channel = new MessageChannel();
-  var maps = {};
-  var idx = 0;
-  var port2 = channel.port2;
+  const channel = new MessageChannel();
+  let maps = {};
+  let idx = 0;
+  let port2 = channel.port2;
   port2.start();
-  port2.onmessage = function (ref) {
-    var ref_data = ref.data;
-    var key = ref_data.key;
-    var value = ref_data.value;
-
-    var resolve = maps[key];
+  port2.onmessage = ({ data: { key, value } }) => {
+    const resolve = maps[key];
     resolve(value);
     delete maps[key];
   };
-  prop$$1('cloneThen', function (value) {
-    return new Promise(function (resolve) {
-      var key = idx++;
+  prop$$1('cloneThen', value => {
+    return new Promise(resolve => {
+      const key = idx++;
       maps[key] = resolve;
       try {
-        channel.port1.postMessage({key: key, value: value});
+        channel.port1.postMessage({ key, value });
       } catch (err) {
         console.error('cloneThen.postMessage', err);
         delete maps[key];
@@ -720,46 +920,49 @@ function initCloneThen (ref) {
           console.error('cloneThen.JSON', err);
           value = clone$$1(value);
         }
-        return then(function () { return resolve(value); })
+        return then(() => resolve(value));
       }
-    })
+    });
   });
 }
 
-function normalizeMap (map) {
-  return Array.isArray(map) ? map.map(function (key) {
+function normalizeMap(map) {
+  return Array.isArray(map) ? map.map(key => {
     return {
       key: key,
       val: key
-    }
-  }) : Object.keys(map).map(function (key) {
+    };
+  }) : Object.keys(map).map(key => {
     return {
       key: key,
       val: map[key]
-    }
-  })
+    };
+  });
 }
 
 // 深度比较复制
-function testAndUpdateDepth (oldState, newState, isVueRoot, Vue$$1) {
-  Object.keys(newState).forEach(function (name) {
+function testAndUpdateDepth(oldState, newState, isVueRoot, Vue$$1) {
+  Object.keys(newState).forEach(name => {
     if (!(name in oldState)) {
       // 新加入的属性
-      return Vue$$1.set(oldState, name, newState[name])
+      return Vue$$1.set(oldState, name, newState[name]);
     }
     // 旧的比较赋值
-    var newValue = newState[name];
-    var oldValue = oldState[name];
+    const newValue = newState[name];
+    const oldValue = oldState[name];
 
     if (isObject(newValue)) {
-      if (!isObject(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
+      if (!isObject(oldValue)) {
+        // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         Vue$$1.delete(oldState, name);
         Vue$$1.set(oldState, name, newValue);
-      } else { // 继续深度比较赋值
+      } else {
+        // 继续深度比较赋值
         testAndUpdateDepth(oldState[name], newValue, false, Vue$$1);
       }
     } else if (isArray(newValue)) {
-      if (!isArray(oldValue)) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
+      if (!isArray(oldValue)) {
+        // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         Vue$$1.delete(oldState, name);
         Vue$$1.set(oldState, name, newValue);
 
@@ -773,7 +976,8 @@ function testAndUpdateDepth (oldState, newState, isVueRoot, Vue$$1) {
       } else {
         testAndUpdateArray(oldValue, newValue, Vue$$1);
       }
-    } else { // 简单类型
+    } else {
+      // 简单类型
       if (oldState[name] !== newState[name]) {
         oldState[name] = newState[name];
       }
@@ -781,31 +985,37 @@ function testAndUpdateDepth (oldState, newState, isVueRoot, Vue$$1) {
   });
 }
 
-function testAndUpdateArray (oldValue, newValue, Vue$$1) {
-  var oldLen = oldValue.length;
-  var newLen = newValue.length;
+function testAndUpdateArray(oldValue, newValue, Vue$$1) {
+  const oldLen = oldValue.length;
+  const newLen = newValue.length;
 
-  if (oldLen > newLen) { // 多了删掉
+  if (oldLen > newLen) {
+    // 多了删掉
     oldValue.splice(newLen, oldLen);
-  } else if (oldLen < newLen) { // 少了补上
+  } else if (oldLen < newLen) {
+    // 少了补上
     while (oldValue.length < newLen) {
       oldValue.push(null);
     }
   }
-  newValue.forEach(function (it, id) {
+  newValue.forEach((it, id) => {
     if (isObject(it)) {
-      if (!isObject(oldValue[id])) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
+      if (!isObject(oldValue[id])) {
+        // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         oldValue.splice(id, 1, it);
-      } else { // 复制对象
+      } else {
+        // 复制对象
         testAndUpdateDepth(oldValue[id], it, false, Vue$$1);
       }
     } else if (isArray(it)) {
-      if (!isArray(oldValue[id])) { // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
+      if (!isArray(oldValue[id])) {
+        // @TEST 类型不匹配, 直接赋值, 正常情况不应该这样
         oldValue.splice(id, 1, it);
       } else {
         testAndUpdateArray(oldValue[id], it, Vue$$1);
       }
-    } else { // 简单类型 直接赋值
+    } else {
+      // 简单类型 直接赋值
       if (it !== oldValue[id]) {
         oldValue.splice(id, 1, it);
       }
@@ -813,27 +1023,28 @@ function testAndUpdateArray (oldValue, newValue, Vue$$1) {
   });
 }
 
-function resetStoreVM (Vue$$1, flux, vaf, state) {
-  var oldVm = vaf.vm;
+function resetStoreVM(Vue$$1, flux, vaf, state) {
+  let oldVm = vaf.vm;
   if (oldVm) {
     flux.off('update', vaf.watch);
   }
-  var silent = Vue$$1.config.silent;
+  const silent = Vue$$1.config.silent;
   Vue$$1.config.silent = true;
-  var vm = vaf.vm = new Vue$$1({ data: {state: state} });
-  flux.on('update', vaf.watch = function (newState) {
+  let vm = vaf.vm = new Vue$$1({ data: { state } });
+  flux.on('update', vaf.watch = newState => {
     if (vaf.deepCopy) {
-      return testAndUpdateDepth(vm.state, newState, true, Vue$$1)
+      return testAndUpdateDepth(vm.state, newState, true, Vue$$1);
     }
     if (isVmGetterMode) {
-      var updates = [];
-      var loop = function ( key ) {
+      let updates = [];
+      for (let key in newState) {
         if (key in vm.state) {
           vm.state[key] = newState[key];
-        } else { // dynamic computed methods
+        } else {
+          // dynamic computed methods
           Vue$$1.util.defineReactive(vm.state, key, newState[key]);
           if (vmGetterMaps[key]) {
-            vmGetterMaps[key].forEach(function (vmIt) {
+            vmGetterMaps[key].forEach(vmIt => {
               if (vmIt._computedWatchers && vmIt._computedWatchers[key]) {
                 updates.indexOf(vmIt) === -1 && updates.push(vmIt);
                 vmIt._computedWatchers[key].update();
@@ -841,82 +1052,70 @@ function resetStoreVM (Vue$$1, flux, vaf, state) {
             });
           }
         }
-      };
-
-      for (var key in newState) loop( key );
-      updates.forEach(function (vm) { return vm.$forceUpdate(); });
-    } else { // old version use mapGetters
-      for (var key$1 in newState) {
-        vm.state[key$1] = newState[key$1];
+      }
+      updates.forEach(vm => vm.$forceUpdate());
+    } else {
+      // old version use mapGetters
+      for (let key in newState) {
+        vm.state[key] = newState[key];
       }
     }
   });
   Vue$$1.config.silent = silent;
   if (oldVm) {
     oldVm.state = null;
-    Vue$$1.nextTick(function () { return oldVm.$destroy(); });
+    Vue$$1.nextTick(() => oldVm.$destroy());
   }
 }
 
-var Vue$1;
+let Vue$1;
 
-function FluxVue (ref) {
-  var flux = ref.flux;
-  var mixinActions = ref.mixinActions; if ( mixinActions === void 0 ) mixinActions = false;
-  var injects = ref.injects; if ( injects === void 0 ) injects = [];
-  var router = ref.router;
-  var onRouteFail = ref.onRouteFail;
-  var payload = ref.payload;
-  var deepth = ref.deepth; if ( deepth === void 0 ) deepth = -1;
-  var deepCopy = ref.deepCopy; if ( deepCopy === void 0 ) deepCopy = false;
-
-  var vaf = {
-    deepCopy: deepCopy,
+function FluxVue({ flux, mixinActions = false, injects = [], router, onRouteFail, payload, deepth = -1, deepCopy = false }) {
+  let vaf = {
+    deepCopy,
     dispatch: flux.dispatch,
     proxy: flux.proxy
   };
-  injects.forEach(function (key) {
+  injects.forEach(key => {
     vaf[key] = flux[key];
   });
   resetStoreVM(Vue$1, flux, vaf, flux.getState());
-  flux.on('replace', function (state) {
+  flux.on('replace', state => {
     resetStoreVM(Vue$1, flux, vaf, state);
   });
   if (mixinActions) {
     Vue$1.mixin({
-      methods: mapActions(unique(
-        Object.keys(flux.mutations).concat(Object.keys(flux.actions))
-      ))
+      methods: mapActions(unique(Object.keys(flux.mutations).concat(Object.keys(flux.actions))))
     });
   }
   Vue$1.mixin({
     methods: {
-      dispatch: function dispatch (method, payload) {
-        return vaf.dispatch(method, payload)
+      dispatch(method, payload) {
+        return vaf.dispatch(method, payload);
       }
     }
   });
   if (router) {
-    router.beforeEach(function (to, from, next$$1) {
-      var matchedComponents = router.getMatchedComponents(to);
+    router.beforeEach((to, from, next$$1) => {
+      let matchedComponents = router.getMatchedComponents(to);
       if (matchedComponents.length) {
-        var args = {
+        let args = {
           dispatch: vaf.dispatch,
           route: to,
           from: from,
           state: vaf.vm.state
         };
-        Promise.all(getComponentsPayloads(matchedComponents, deepth).map(function (Component) {
+        Promise.all(getComponentsPayloads(matchedComponents, deepth).map(Component => {
           if (payload) {
-            return payload(Component, args, to, from)
+            return payload(Component, args, to, from);
           }
-          return Component.payload(args)
-        })).then(next$$1).catch(function (err) {
+          return Component.payload(args);
+        })).then(next$$1).catch(err => {
           if (!(err instanceof Error)) {
-            return next$$1(err)
+            return next$$1(err);
           }
           if (onRouteFail) {
-            return onRouteFail(to, from, next$$1, err)
+            return onRouteFail(to, from, next$$1, err);
           } else {
             next$$1(false);
           }
@@ -926,14 +1125,14 @@ function FluxVue (ref) {
       }
     });
   }
-  return vaf
+  return vaf;
 }
 
-function getComponentsPayloads (components, depth) {
-  var payloads = [];
+function getComponentsPayloads(components, depth) {
+  let payloads = [];
   if (Array.isArray(components)) {
-    for (var i = 0; i < components.length; ++i) {
-      var com = components[i];
+    for (let i = 0; i < components.length; ++i) {
+      let com = components[i];
       if (com.payload) {
         payloads.push(com);
       }
@@ -942,37 +1141,37 @@ function getComponentsPayloads (components, depth) {
       }
     }
   } else {
-    for (var comName in components) {
-      var com$1 = components[comName];
-      if (com$1.payload) {
-        payloads.push(com$1);
+    for (let comName in components) {
+      let com = components[comName];
+      if (com.payload) {
+        payloads.push(com);
       }
-      if (depth && com$1.components) {
-        payloads = payloads.concat(getComponentsPayloads(com$1.components, depth--));
+      if (depth && com.components) {
+        payloads = payloads.concat(getComponentsPayloads(com.components, depth--));
       }
     }
   }
-  return payloads
+  return payloads;
 }
 
-var vmGetterMaps = {};
-var isVmGetterMode = false;
+let vmGetterMaps = {};
+let isVmGetterMode = false;
 
-function registerVmGetters (vm, getters) {
+function registerVmGetters(vm, getters) {
   isVmGetterMode || (isVmGetterMode = true);
   getters = vm._getters = Object.keys(getters);
-  getters.forEach(function (key) {
-    var arr = vmGetterMaps[key] || (vmGetterMaps[key] = []);
+  getters.forEach(key => {
+    let arr = vmGetterMaps[key] || (vmGetterMaps[key] = []);
     arr.push(vm);
   });
 }
 
-function destroyVmGetters (vm) {
+function destroyVmGetters(vm) {
   if (vm._getters) {
-    vm._getters.forEach(function (key) {
+    vm._getters.forEach(key => {
       if (vmGetterMaps[key]) {
-        var arr = vmGetterMaps[key];
-        var pos = arr.indexOf(vm);
+        let arr = vmGetterMaps[key];
+        let pos = arr.indexOf(vm);
         if (pos >= -1) {
           arr.splice(pos, 1);
         }
@@ -981,23 +1180,17 @@ function destroyVmGetters (vm) {
   }
 }
 
-FluxVue.install = function install (vue) {
+FluxVue.install = function install(vue) {
   Vue$1 = vue;
   Vue$1.mixin({
-    beforeCreate: function beforeCreate () {
-      var this$1 = this;
-
-      var options = this.$options;
+    beforeCreate() {
+      const options = this.$options;
       if (options.vaf) {
         this.$flux = options.vaf;
       } else if (options.parent && options.parent.$flux) {
         this.$flux = options.parent.$flux;
       }
-      var proxys = options.proxys;
-      var methods = options.methods;
-      var actions = options.actions;
-      var getters = options.getters;
-      var computed = options.computed;
+      let { proxys, methods, actions, getters, computed } = options;
       if (this.$flux) {
         if (actions) {
           methods || (methods = options.methods = {});
@@ -1005,22 +1198,22 @@ FluxVue.install = function install (vue) {
         }
         if (getters) {
           computed || (computed = options.computed = {});
-          var getterMaps = mapGetters(getters);
+          let getterMaps = mapGetters(getters);
           registerVmGetters(this, getterMaps);
           Object.assign(computed, getterMaps);
         }
         if (proxys) {
-          var maps = this.__vafMaps = {};
-          Object.keys(proxys).map(function (key) {
-            maps[key] = (typeof proxys[key] === 'function' ? proxys[key] : methods[proxys[key]]).bind(this$1);
+          let maps = this.__vafMaps = {};
+          Object.keys(proxys).map(key => {
+            maps[key] = (typeof proxys[key] === 'function' ? proxys[key] : methods[proxys[key]]).bind(this);
           });
           this.$flux.proxy(maps);
         }
       }
     },
-    beforeDestroy: function beforeDestroy () {
-      var options = this.$options;
-      var proxys = options.proxys;
+    beforeDestroy() {
+      const options = this.$options;
+      let { proxys } = options;
       if (proxys && this.$flux && this.__vafMaps) {
         this.$flux.proxy(this.__vafMaps, null);
       }
@@ -1035,197 +1228,169 @@ FluxVue.install = function install (vue) {
 };
 
 // 后续不建议使用
-function mapGetters (getters) {
-  var res = {};
+function mapGetters(getters) {
+  let res = {};
   normalizeMap(getters).forEach(function (ref) {
-    var key = ref.key;
-    var val = ref.val;
-    res[key] = isFunction(val) ? function mappedGetter () { // function(state){}
-      return val.call(this, this.$flux.vm.state)
-    } : function mappedGetter () {
-      return this.$flux.vm.state[val]
+    let key = ref.key;
+    let val = ref.val;
+    res[key] = isFunction(val) ? function mappedGetter() {
+      // function(state){}
+      return val.call(this, this.$flux.vm.state);
+    } : function mappedGetter() {
+      return this.$flux.vm.state[val];
     };
   });
-  return res
+  return res;
 }
 
-function mapActions (actions) {
-  var res = {};
-  normalizeMap(actions).forEach(function (ref) {
-    var key = ref.key;
-    var val = ref.val;
-    res[key] = function mappedAction (payload) {
+function mapActions(actions) {
+  let res = {};
+  normalizeMap(actions).forEach(ref => {
+    let key = ref.key;
+    let val = ref.val;
+    res[key] = function mappedAction(payload) {
       if (!this.$flux) {
-        var message = "can not call action " + key + " without flux";
-        return Promise.reject(new Error(message))
+        let message = `can not call action ${key} without flux`;
+        return Promise.reject(new Error(message));
       }
-      return this.$flux.dispatch(val, payload)
+      return this.$flux.dispatch(val, payload);
     };
   });
-  return res
+  return res;
 }
 
-var FluxRedux = function FluxRedux (ref) {
-  var this$1 = this;
-  var flux = ref.flux;
-
-  this.flux = flux;
-  this.dispatch = flux.dispatch;
-  this.state = flux.getState();
-  flux.on('update', this.watchUpdate = function (newState) {
-    this$1.state = Object.assign({}, this$1.state, newState);
-    flux.emit('redux_change');
-  });
-  flux.on('replace', this.watchReplace = function (newState) {
-    this$1.state = newState;
-    flux.emit('redux_change');
-  });
-};
-FluxRedux.prototype.getState = function getState () {
-  return this.state
-};
-FluxRedux.prototype.subscribe = function subscribe (fn) {
-  return this.flux.subscribe('redux_change', fn)
-};
-
-function syncState (keys, sync) {
-  var ret = {};
-  keys.forEach(function (key) {
+function syncState(keys, sync) {
+  let ret = {};
+  keys.forEach(key => {
     ret[key] = sync[key]();
   });
-  return ret
+  return ret;
 }
 
-function syncBinder (binder) {
+function syncBinder(binder) {
   if (binder.vms.length) {
-    var state = syncState(binder.keys, binder.sync);
-    binder.vms.forEach(function (vm) { return vm.update(state); });
+    let state = syncState(binder.keys, binder.sync);
+    binder.vms.forEach(vm => vm.update(state));
   }
 }
 
-function syncBinderKeys (binder, keys) {
-  var state = syncState(keys.filter(function (key) { return binder.keys.indexOf(key) >= 0; }), binder.sync);
-  binder.vms.forEach(function (vm) { return vm.update(state); });
+function syncBinderKeys(binder, keys) {
+  let state = syncState(keys.filter(key => binder.keys.indexOf(key) >= 0), binder.sync);
+  binder.vms.forEach(vm => vm.update(state));
 }
 
-var _startIdx = 0;
+let _startIdx = 0;
 
 var TodoModule = {
   state: {
     todoList: []
   },
   mutations: {
-    createNew: function createNew (ref, newItem) {
-      var todoList = ref.state.todoList;
-
+    createNew({ state: { todoList } }, newItem) {
       todoList.push(newItem);
-      return { todoList: todoList }
+      return { todoList };
     },
-    toggleCompleted: function toggleCompleted (ref, todo) {
-      var todoList = ref.state.todoList;
-
-      for (var i = 0, l = todoList.length; i < l; ++i) {
+    toggleCompleted({ state: { todoList } }, todo) {
+      for (let i = 0, l = todoList.length; i < l; ++i) {
         if (todoList[i].id == todo.id) {
-          var it = todoList[i];
+          let it = todoList[i];
           if (it.isCompleted == todo.isCompleted) {
             it.isCompleted = !todo.isCompleted;
-            return { todoList: todoList }
+            return { todoList };
           }
         }
       }
     },
-    removeItemById: function removeItemById (ref, id) {
-      var todoList = ref.state.todoList;
-
-      for (var i = todoList.length - 1; i >= 0; --i) {
+    removeItemById({ state: { todoList } }, id) {
+      for (let i = todoList.length - 1; i >= 0; --i) {
         if (todoList[i].id == id) {
           todoList.splice(i, 1);
-          return { todoList: todoList }
+          return { todoList };
         }
       }
     },
-    restoreItems: function restoreItems (_, todoList) {
+    restoreItems(_, todoList) {
       if (!Array.isArray(todoList)) {
         todoList = [];
       }
       _startIdx = todoList.length;
       return {
-        todoList: todoList
-      }
+        todoList
+      };
     }
   },
   actions: {
-    createNew: function createNew$1 (ref, title) {
-      var resolve = ref.resolve;
-      var commit = ref.commit;
-      var dispatch = ref.dispatch;
-
-      var newItem = {};
+    createNew({ resolve, commit, dispatch }, title) {
+      let newItem = {};
       newItem.title = title;
       newItem.id = ++_startIdx;
       newItem.isCompleted = false;
       commit.createNew(newItem);
-      return dispatch.onCreateNew(newItem)
+      return dispatch.onCreateNew(newItem);
     }
   }
 };
 
-var Todo = {
-render: function(){with(this){return _c('div',{staticClass:"todolist"},[_c('h4',[_v("TODO LIST"),_c('i',[_v("(create times "+_s(count)+")")])]),_v(" "),_c('ul',_l((todoList),function(child){return _c('li',[_c('label',[_c('input',{attrs:{"type":"checkbox"},domProps:{"checked":child.isCompleted},on:{"change":function($event){toggleCompleted(child)}}}),_v(" "),_c('span',[_v(_s(child.title))])]),_v(" "),_c('button',{on:{"click":function($event){removeItemById(child.id)}}},[_v("x")])])})),_v(" "),_c('input',{directives:[{name:"model",rawName:"v-model",value:(newText),expression:"newText"}],attrs:{"type":"text"},domProps:{"value":(newText)},on:{"input":function($event){if($event.target.composing)return;newText=$event.target.value}}}),_v(" "),_c('button',{on:{"click":function($event){createNew(newText)}}},[_v("Add")])])}},
-staticRenderFns: [],
-		computed: mapGetters([
-			'todoList'
-		]),
-		data: function () {
-			return {
-				newText: '',
-				count: 0
-			}
-		},
-		payload: function payload (ref) {
-			var dispatch = ref.dispatch;
-
-			return dispatch('restoreItems', [{
-				title: 'payload-todo',
-				id: 1,
-				isCompleted: true
-			}])
-		},
-		proxys: {
-			onCreateNew: function onCreateNew (ref, item) {
-				var resolve = ref.resolve;
-
-				this.count++;
-				return resolve('ok')
-			}
+var Todo = { render: function () {
+		var _vm = this;var _h = _vm.$createElement;var _c = _vm._self._c || _h;return _c('div', { staticClass: "todolist" }, [_c('h4', [_vm._v("TODO LIST"), _c('i', [_vm._v("(create times " + _vm._s(_vm.count) + ")")])]), _c('ul', _vm._l(_vm.todoList, function (child) {
+			return _c('li', [_c('label', [_c('input', { attrs: { "type": "checkbox" }, domProps: { "checked": child.isCompleted }, on: { "change": function ($event) {
+						_vm.toggleCompleted(child);
+					} } }), _vm._v(" "), _c('span', [_vm._v(_vm._s(child.title))])]), _c('button', { on: { "click": function ($event) {
+						_vm.removeItemById(child.id);
+					} } }, [_vm._v("x")])]);
+		})), _c('input', { directives: [{ name: "model", rawName: "v-model", value: _vm.newText, expression: "newText" }], attrs: { "type": "text" }, domProps: { "value": _vm.newText }, on: { "input": function ($event) {
+					if ($event.target.composing) {
+						return;
+					}_vm.newText = $event.target.value;
+				} } }), _vm._v(" "), _c('button', { on: { "click": function ($event) {
+					_vm.createNew(_vm.newText);
+				} } }, [_vm._v("Add")])]);
+	}, staticRenderFns: [],
+	getters: ['todoList'],
+	data: function () {
+		return {
+			newText: '',
+			count: 0
+		};
+	},
+	payload({ dispatch }) {
+		return dispatch('restoreItems', [{
+			title: 'payload-todo',
+			id: 1,
+			isCompleted: true
+		}]);
+	},
+	proxys: {
+		onCreateNew({ resolve }, item) {
+			this.count++;
+			return resolve('ok');
 		}
-	};
+	}
+};
 
 Vue.use(FluxVue);
 
-var flux = new Flux({
-	strict: true // enable this for promise action to resolve data copy
+let flux = new Flux({
+  strict: true // enable this for promise action to resolve data copy
 });
 flux.declare(TodoModule);
 
-var router = new VueRouter({
-  routes: [
-    {
-      name: "Todo",
-      path: "/",
-      component: Todo
-    }
-  ]
+let router = new VueRouter({
+  routes: [{
+    name: "Todo",
+    path: "/",
+    component: Todo
+  }]
 });
 
-var app = new Vue({
-	vaf: new FluxVue({
-		flux: flux,
-    router: router,
-		mixinActions: true
-	}),
-  router: router,
-	el: '#app'
+let app = new Vue({
+  vaf: new FluxVue({
+    flux,
+    router,
+    mixinActions: true
+  }),
+  router,
+  el: '#app'
 });
 
 window.flux = flux;

@@ -35,6 +35,7 @@
     "nyc": "^10.0.0",
     "rollup": "^0.41.4",
     "rollup-plugin-babel": "^2.7.1",
+    "sav-util": "^1.0.23",
     "standard": "^8.5.0",
     "vue": "^2.4.2",
     "watch-cli": "^0.2.1"
@@ -45,11 +46,15 @@
   },
   "babel": {
     "plugins": [
-      "transform-es2015-modules-commonjs"
+      "transform-es2015-modules-commonjs",
+      [
+        "transform-object-rest-spread",
+        {
+          "useBuiltIns": true
+        }
+      ]
     ]
   },
   "homepage": "https://github.com/savjs/sav-flux#readme",
-  "dependencies": {
-    "sav-util": "^1.0.21"
-  }
+  "dependencies": {}
 }
