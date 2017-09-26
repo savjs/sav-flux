@@ -94,9 +94,6 @@ export function FluxVue ({flux, mixinActions = false, injects = [], router, onRo
             flux.updateState(newState)
             next()
           }).catch(err => {
-            if (!(err instanceof Error)) {
-              return next(err)
-            }
             if (onRouteFail) {
               return onRouteFail(to, from, next, err)
             } else {
@@ -234,6 +231,7 @@ function getComponentsDepth (Vue, components, depth, arr) {
       appendComponent(Vue, components[comName], depth, arr)
     }
   }
+  return arr
 }
 
 function appendComponent (Vue, com, depth, arr) {

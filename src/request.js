@@ -58,10 +58,7 @@ export class Request {
     }
     let {invoker} = this
     let ctx = {request: options}
-    let res = invoker(ctx).then(() => ctx.response)
-    if (stripHeaders) {
-      res = res.then(() => ctx.response.data)
-    }
+    let res = invoker(ctx).then(() => stripHeaders ? ctx.response.data : ctx.response)
     return res
   }
   invoke (ctx, next) {
