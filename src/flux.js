@@ -125,7 +125,7 @@ function initCommit ({prop, flux, updateState, resolve}) {
 }
 
 function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
-  let dispatch = (action, payload) => {
+  let dispatch = (action, payload, fetch) => {
     let {actions, mutations, proxys} = flux
     let entry = action in actions && actions[action] ||
       action in mutations && function (_, payload) {
@@ -149,7 +149,10 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
     if (!isPromiseLike(ret)) {
       ret = resolve(ret)
     }
-        // make copy
+    if (fetch) {
+      return ret
+    }
+    // make copy
     return opts.strict ? ret.then(data => {
       if (Array.isArray(data) || typeof data === 'object') {
         if (data.__clone) {

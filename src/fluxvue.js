@@ -169,12 +169,12 @@ export function mapActions (actions) {
   normalizeMap(actions).forEach((ref) => {
     let key = ref.key
     let val = ref.val
-    res[key] = function mappedAction (payload) {
+    res[key] = function mappedAction (payload, fetch) {
       if (!this.$flux) {
         let message = `can not call action ${key} without flux`
         return Promise.reject(new Error(message))
       }
-      return this.$flux.dispatch(val, payload)
+      return this.$flux.dispatch(val, payload, fetch)
     }
   })
   return res
