@@ -1,5 +1,4 @@
 import { bindEvent, extend, clone, isPromiseLike, probe } from 'sav-util'
-import {Request} from './request.js'
 
 export function Flux (opts = {strict: true}) {
   let flux = this
@@ -43,7 +42,6 @@ function initUse ({flux, prop}) {
 function initUtil ({prop, opts}) {
   prop('clone', clone)
   prop('extend', extend)
-  prop('request', new Request())
   prop('opt', (name, defaultVal = null) => {
     return name in opts ? opts[name] : defaultVal
   })

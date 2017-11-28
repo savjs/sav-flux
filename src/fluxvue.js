@@ -1,4 +1,4 @@
-import {isFunction, unique, isString, isObject} from 'sav-util'
+import {isFunction, unique} from 'sav-util'
 import {normalizeMap, testAndUpdateDepth} from './util.js'
 
 function resetStoreVM (Vue, flux, vaf, state) {
@@ -68,44 +68,11 @@ export function FluxVue ({flux, mixinActions = false, injects = [], router, onRo
   }
   Vue.mixin({
     methods: {
-      dispatch (method, payload) {
-        return vaf.dispatch(method, payload)
-      }
+      dispatch: flux.dispatch,
+      updateState: flux.updateState,
+      commit: flux.commit
     }
   })
-  if (router) {
-    router.beforeEach((to, from, next) => {
-      let matchedComponents = router.getMatchedComponents(to)
-      if (matchedComponents.length) {
-        let arr = []
-        getComponentsDepth(Vue, matchedComponents, deepth, arr)
-        let payloads = []
-        arr.reduce(processComponent, payloads)
-        if (payloads.length) {
-          let routes = getRoutes(to, router, payloads, flux)
-          Promise.all(routes.map(({path, query}) => {
-            return flux.request.get({
-              url: path,
-              query
-            })
-          }))
-          .then((args) => {
-            let newState = Object.assign.apply({}, args)
-            flux.updateState(newState)
-            next()
-          }).catch(err => {
-            if (onRouteFail) {
-              return onRouteFail(to, from, next, err)
-            } else {
-              next(false)
-            }
-          })
-          return
-        }
-      }
-      next()
-    })
-  }
   return vaf
 }
 
@@ -211,55 +178,4 @@ export function mapActions (actions) {
     }
   })
   return res
-}
-
-function processComponent (payloads, component) {
-  let options = typeof component === 'object' ? component : component.options
-  if (options.payload) {
-    payloads.push(options.payload)
-  }
-  return payloads
-}
-
-function getComponentsDepth (Vue, components, depth, arr) {
-  if (Array.isArray(components)) {
-    for (let i = 0; i < components.length; ++i) {
-      appendComponent(Vue, components[i], depth, arr)
-    }
-  } else {
-    for (let comName in components) {
-      appendComponent(Vue, components[comName], depth, arr)
-    }
-  }
-  return arr
-}
-
-function appendComponent (Vue, com, depth, arr) {
-  if (isString(com)) {
-    com = Vue.component(com)
-  }
-  if (com) {
-    arr.push(com)
-    if (depth && com.components) {
-      getComponentsDepth(Vue, com.components, depth--, arr)
-    }
-  }
-}
-
-function getRoutes (vueRoute, vueRouter, payloads, flux) {
-  let routes = payloads.reduce((routes, payload) => {
-    if (isFunction(payload)) {
-      payload = payload(vueRoute)
-    }
-    if (Array.isArray(payload) || isObject(payload)) {
-      return routes.concat(payload)
-    }
-    return routes
-  }, []).map((route) => {
-    if (route.name && !route.fullPath) {
-      return vueRouter.resolve(route)
-    }
-    return route
-  })
-  return routes
 }
