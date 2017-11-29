@@ -91,7 +91,7 @@ function initState ({prop, emit, cloneThen, clone, resolve}) {
 }
 
 function initCommit ({prop, flux, updateState, resolve}) {
-  let commit = (type, payload) => {
+  let commit = (type, payload, fetch) => {
     let {mutations} = flux
     if (typeof type === 'object') {
       payload = type
@@ -102,7 +102,7 @@ function initCommit ({prop, flux, updateState, resolve}) {
       throw new Error('[flux] unknown mutation : ' + type)
     }
     let state = flux.state
-    let ret = entry(flux, payload)
+    let ret = entry(flux, payload, fetch)
     let update = (ret) => {
       if (ret) {
         if (ret === state) {
@@ -128,8 +128,8 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
   let dispatch = (action, payload, fetch) => {
     let {actions, mutations, proxys} = flux
     let entry = action in actions && actions[action] ||
-      action in mutations && function (_, payload) {
-        return commit(action, payload)
+      action in mutations && function (_, payload, fetch) {
+        return commit(action, payload, fetch)
       }
     if (!entry && (proxys[action])) {
       entry = proxys[action]
@@ -139,7 +139,7 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
     }
     let err, ret
     try {
-      ret = entry(flux, payload)
+      ret = entry(flux, payload, fetch)
     } catch (e) {
       err = e
     }
