@@ -249,6 +249,9 @@ function proxyApi (entry) {
   if (probe.Proxy) {
     return new Proxy(entry, {
       get (target, name) {
+        if (name === 'bind') {
+          return () => entry
+        }
         return payload => {
           return entry(name, payload)
         }
