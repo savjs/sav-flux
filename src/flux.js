@@ -249,11 +249,11 @@ function proxyApi (entry) {
   if (probe.Proxy) {
     return new Proxy(entry, {
       get (target, name) {
-        if (name === 'bind') {
+        if (name === 'bind') { // @NOTE vue 2.5 使用了bind
           return () => entry
         }
-        return payload => {
-          return entry(name, payload)
+        return (payload, fetch) => {
+          return entry(name, payload, fetch)
         }
       }
     })
