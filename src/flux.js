@@ -1,4 +1,4 @@
-import { bindEvent, extend, clone, isPromiseLike, probe } from 'sav-util'
+import { bindEvent, extend, clone, isPromiseLike, probe, isObject } from 'sav-util'
 
 export function Flux (opts = {strict: true}) {
   let flux = this
@@ -154,7 +154,7 @@ function initDispatch ({prop, flux, commit, resolve, reject, opts, cloneThen}) {
     }
     // make copy
     return opts.strict ? ret.then(data => {
-      if (Array.isArray(data) || typeof data === 'object') {
+      if (Array.isArray(data) || isObject(data)) {
         if (data.__clone) {
           return resolve(data)
         }
