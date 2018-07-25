@@ -50,7 +50,8 @@ export function FluxVue ({flux, mixinActions = false, injects = [], router, onRo
   let vaf = {
     deepCopy,
     dispatch: flux.dispatch,
-    proxy: flux.proxy
+    proxy: flux.proxy,
+    subscribe: flux.subscribe
   }
   injects.forEach(key => {
     vaf[key] = flux[key]
@@ -102,8 +103,20 @@ function destroyVmGetters (vm) {
   }
 }
 
+
 FluxVue.install = function install (vue) {
   Vue = vue
+  let delegate = (vm, events) => {
+    let vmEvent = vm.$flux
+    let reverse = events.map(it => vmEvent.subscribe(it, (...args) => {
+     vm[it](...args)
+    }))
+    return () => {
+      reverse.forEach(it => it())
+      delete vm.$unsubscribe
+    }
+  }
+
   Vue.mixin({
     beforeCreate () {
       const options = this.$options
@@ -112,10 +125,20 @@ FluxVue.install = function install (vue) {
       } else if (options.parent && options.parent.$flux) {
         this.$flux = options.parent.$flux
       }
-      let {proxys, methods, actions, getters, computed} = options
+      let {proxys, methods, actions, getters, computed, subscribes} = options
       if (this.$flux) {
+        if (subscribes || actions) {
+          methods || (methods = this.$options.methods = {})
+        }
+        if (subscribes) {
+          if (!Array.isArray(subscribes)) { // object
+            Object.assign(methods, subscribes)
+            subscribes = Object.keys(subscribes)
+          }
+          this.$unsubscribe = delegate(this, subscribes)
+        }
+
         if (actions) {
-          methods || (methods = options.methods = {})
           Object.assign(methods, mapActions(actions))
         }
         if (getters) {
@@ -141,6 +164,9 @@ FluxVue.install = function install (vue) {
       }
       if (isVmGetterMode) {
         destroyVmGetters(this)
+      }
+      if (this.$unsubscribe) {
+        this.$unsubscribe()
       }
       if (this.$flux) {
         delete this.$flux

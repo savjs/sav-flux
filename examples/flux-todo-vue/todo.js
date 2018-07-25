@@ -40,11 +40,12 @@ export default {
     }
   },
   actions: {
-    createNew ({resolve, commit, dispatch}, title) {
+    createNew ({resolve, commit, dispatch, emit}, title) {
       let newItem = {}
       newItem.title = title
       newItem.id = ++_startIdx
       newItem.isCompleted = false
+      emit('getTitle', title)
       commit.createNew(newItem)
       return dispatch.onCreateNew(newItem)
     }

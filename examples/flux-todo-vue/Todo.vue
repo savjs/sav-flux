@@ -19,6 +19,11 @@
 		getters:[
 			'todoList'
 		],
+    subscribes:{
+      getTitle(arg) {
+		    console.log('broadcat', arg)
+			}
+		},
 		data: function () {
 			return {
 				newText: '',

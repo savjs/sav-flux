@@ -28,6 +28,10 @@ function isUndefined(arg) {
   return arg === undefined;
 }
 
+function isPromise(obj) {
+  return obj && isFunction(obj.then);
+}
+
 function defined(val) {
   return val !== 'undefined';
 }
@@ -221,7 +225,13 @@ function clone(val) {
 }
 
 function prop(target, key, value) {
-  Object.defineProperty(target, key, { value, writable: true, configurable: true });
+  if (isObject(key)) {
+    for (let name in key) {
+      Object.defineProperty(target, name, { value: key[name], writable: true, configurable: true });
+    }
+  } else {
+    Object.defineProperty(target, key, { value, writable: true, configurable: true });
+  }
 }
 
 function makePropFunc(target, propName) {
@@ -343,153 +353,6 @@ function lcfirst(str) {
   return str.charAt(0).toLowerCase() + str.slice(1);
 }
 
-/**
- * ajax 方法
- * @param  {Object}   opts 请求对象
- * {
- *     method:"GET",
- *     dataType:"JSON",
- *     headers:{},
- *     url:"",
- *     data:{},
- * }
- * @param  {Function} next 回调
- * @return {XMLHttpRequest}        xhr对象
- */
-function ajax(opts, next) {
-  let method = (opts.method || 'GET').toUpperCase();
-  let dataType = (opts.dataType || 'JSON').toUpperCase();
-  let timeout = opts.timeout;
-  /* global XMLHttpRequest */
-  let req = new XMLHttpRequest();
-  let data = null;
-  let isPost = method === 'POST';
-  let isGet = method === 'GET';
-  let isFormData = false;
-  let emit = function (err, data, headers) {
-    if (timeout) {
-      clearTimeout(timeout);
-      timeout = null;
-    }
-    req.onload = req.onreadystatechange = req.onerror = null;
-    if (next) {
-      let tmp = next;
-      next = null;
-      tmp(err, data, headers);
-    }
-  };
-  if (isGet) {
-    if (opts.data) {
-      let u = parseUrl(opts.url);
-      let q = parseQuery(u.query);
-      for (let x in opts.data) {
-        q[x] = opts.data[x];
-      }
-      u.query = stringifyQuery(q);
-      opts.url = stringifyUrl(u);
-      opts.data = null;
-    }
-  } else if (isPost) {
-    data = opts.data;
-    /* global FormData */
-    if (probe.FormData) {
-      isFormData = data instanceof FormData;
-      if (!isFormData) {
-        data = stringifyQuery(data);
-      }
-    }
-  }
-  if (timeout) {
-    timeout = setTimeout(function () {
-      req.abort();
-      emit(new Error('error_timeout'));
-    }, timeout);
-  }
-  try {
-    opts.xhr && opts.xhr(req);
-    if (dataType === 'BINARY') {
-      req.responseType = 'arraybuffer';
-    }
-    req.open(method, opts.url, true);
-    if (opts.headers) {
-      for (let x in opts.headers) {
-        req.setRequestHeader(x, opts.headers[x]);
-      }
-    }
-    if (isPost && !isFormData) {
-      req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    }
-    if (opts.headerOnly) {
-      req.onreadystatechange = function () {
-        // console.log('state', req.readyState, req);
-        if (req.readyState === 2) {
-          // HEADERS_RECEIVED
-          let headers = parseHeaders(req.getAllResponseHeaders(), opts.camelHeaders);
-          req.abort();
-          emit(null, undefined, headers);
-        }
-      };
-    }
-    req.onload = function () {
-      // if(req.readyState != 4) return;
-      if ([200, 304, 206, 0].indexOf(req.status) === -1) {
-        // error
-        emit(new Error('error_status_' + req.status));
-      } else {
-        let data = req.response;
-        try {
-          if (dataType === 'JSON') {
-            data = JSON.parse(req.responseText);
-          } else if (dataType === 'XML') {
-            data = req.responseXML;
-          } else if (dataType === 'TEXT') {
-            data = req.responseText;
-          } else if (dataType === 'BINARY') {
-            let arrayBuffer = new Uint8Array(data);
-            let str = '';
-            for (let i = 0; i < arrayBuffer.length; i++) {
-              str += String.fromCharCode(arrayBuffer[i]);
-            }
-            data = str;
-          }
-        } catch (err) {
-          return emit(err);
-        }
-        emit(null, data, parseHeaders(req.getAllResponseHeaders(), opts.camelHeaders));
-      }
-    };
-    req.onerror = function (e) {
-      emit(new Error('error_network'));
-    };
-    // 进度
-    if (opts.onprogress && !opts.headerOnly) {
-      req.onloadend = req.onprogress = function (e) {
-        let info = {
-          total: e.total,
-          loaded: e.loaded,
-          percent: e.total ? Math.trunc(100 * e.loaded / e.total) : 0
-        };
-        if (e.type === 'loadend') {
-          info.percent = 100;
-        } else if (e.total === e.loaded) {
-          return;
-        }
-        if (e.total < e.loaded) {
-          info.total = info.loaded;
-        }
-        if (info.percent === 0) {
-          return;
-        }
-        opts.onprogress(info);
-      };
-    }
-    req.send(data);
-  } catch (e) {
-    emit(e);
-  }
-  return req;
-}
-
 function parseHeaders(str, camelHeaders) {
   let ret = {};
   str.trim().split('\n').forEach(function (key) {
@@ -501,126 +364,371 @@ function parseHeaders(str, camelHeaders) {
   return ret;
 }
 
-function compose(middleware) {
-  if (!Array.isArray(middleware)) throw new TypeError('Middleware stack must be an array!');
-  for (const fn of middleware) {
-    if (typeof fn !== 'function') throw new TypeError('Middleware must be composed of functions!');
+function handleResolve(ret) {
+  let it = this.nexts.shift();
+  if (it) {
+    let { resolve, reject } = it;
+    if (resolve) {
+      this.next = this.next.then(resolve, reject).catch(handleReject.bind(this)).then(handleResolve.bind(this));
+    }
+  } else {
+    if (this.onFinally) {
+      this.nexts = [];
+      this.onFinally();
+    }
+  }
+}
+
+function handleReject(err) {
+  this.error = err;
+  if (this.onFinally) {
+    this.nexts = [];
+    this.onFinally(this.error);
+  }
+}
+
+const tmpl = (() => {
+  let tmplEncodeReg = /[<>&"'\x00]/g;
+  let tmplEncodeMap = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+
+  function compile(str) {
+    return str.replace(/([\s'\\])(?![^%]*%\})|(?:\{%(=|#)([\s\S]+?)%\})|(\{%)|(%\})/g, function (s, p1, p2, p3, p4, p5) {
+      if (p1) {
+        // whitespace, quote and backspace in interpolation context
+        return {
+          '\n': '\\n',
+          '\r': '\\r',
+          '\t': '\\t',
+          ' ': ' '
+        }[s] || '\\' + s;
+      }
+      if (p2) {
+        // interpolation: {%=prop%}, or unescaped: {%#prop%}
+        if (p2 === '=') {
+          return "'\r\n+slash(" + p3 + ")+'";
+        }
+        return "'\r\n+(" + p3 + ")+'";
+      }
+      if (p4) {
+        // evaluation start tag: {%
+        return "';\r\n";
+      }
+      if (p5) {
+        // evaluation end tag: %}
+        return "\r\n_tmp_+='";
+      }
+    });
   }
 
-  /**
-   * @param {Object} context
-   * @return {Promise}
-   * @api public
-   */
+  function slash(s) {
+    return String(s || '').replace(tmplEncodeReg, c => tmplEncodeMap[c] || '');
+  }
 
-  return function (context, next) {
-    // last called middleware #
-    let index = -1;
-    return dispatch(0);
-    function dispatch(i) {
-      if (i <= index) return Promise.reject(new Error('next() called multiple times'));
-      index = i;
-      let fn = middleware[i];
-      if (i === middleware.length) fn = next;
-      if (!fn) return Promise.resolve();
-      try {
-        return Promise.resolve(fn(context, function next() {
-          return dispatch(i + 1);
-        }));
-      } catch (err) {
-        return Promise.reject(err);
+  let Func = Function;
+
+  return str => {
+    let func = new Func('state, slash', "let _tmp_=''; {_tmp_='" + compile(str || '') + "';}\r\n return _tmp_");
+    return state => func(state, slash);
+  };
+})();
+
+// https://github.com/SheetJS/js-crc32
+const crc32 = (() => {
+  const poly = -306674912;
+  const table = (() => {
+    let c = 0;
+    let table = new Array(256);
+    for (let n = 0; n !== 256; ++n) {
+      c = n;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      c = c & 1 ? poly ^ c >>> 1 : c >>> 1;
+      table[n] = c;
+    }
+    return table;
+  })();
+
+  return (str, seed) => {
+    let C = seed ^ -1;
+    for (let i = 0, L = str.length, c, d; i < L;) {
+      c = str.charCodeAt(i++);
+      if (c < 0x80) {
+        C = C >>> 8 ^ table[(C ^ c) & 0xFF];
+      } else if (c < 0x800) {
+        C = C >>> 8 ^ table[(C ^ (192 | c >> 6 & 31)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | c & 63)) & 0xFF];
+      } else if (c >= 0xD800 && c < 0xE000) {
+        c = (c & 1023) + 64;
+        d = str.charCodeAt(i++) & 1023;
+        C = C >>> 8 ^ table[(C ^ (240 | c >> 8 & 7)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | c >> 2 & 63)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | d >> 6 & 15 | (c & 3) << 4)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | d & 63)) & 0xFF];
+      } else {
+        C = C >>> 8 ^ table[(C ^ (224 | c >> 12 & 15)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | c >> 6 & 63)) & 0xFF];
+        C = C >>> 8 ^ table[(C ^ (128 | c & 63)) & 0xFF];
       }
     }
+    return C ^ -1;
   };
-}
+})();
 
-class Request {
-  constructor(opts) {
-    this.opts = {
-      baseUrl: '/',
-      stripHeaders: true, // 不返回头部信息
-      handleError: false, // 捕获异常, emit('error')
-      ajax
-    };
-    this.invokeQueues = [this.invoke.bind(this)];
-    this.invoker = null;
-    bindEvent(this);
-    if (opts) {
-      this.setOptions(opts);
+/**
+ * jQuery MD5 hash algorithm function
+ *
+ *  <code>
+ *    Calculate the md5 hash of a String
+ *    String $.md5 ( String str )
+ *  </code>
+ *
+ * Calculates the MD5 hash of str using the » RSA Data Security, Inc. MD5 Message-Digest Algorithm, and returns that hash.
+ * MD5 (Message-Digest algorithm 5) is a widely-used cryptographic hash function with a 128-bit hash value. MD5 has been employed in a wide variety of security applications, and is also commonly used to check the integrity of data. The generated hash is also non-reversable. Data cannot be retrieved from the message digest, the digest uniquely identifies the data.
+ * MD5 was developed by Professor Ronald L. Rivest in 1994. Its 128 bit (16 byte) message digest makes it a faster implementation than SHA-1.
+ * This script is used to process a variable length message into a fixed-length output of 128 bits using the MD5 algorithm. It is fully compatible with UTF-8 encoding. It is very useful when u want to transfer encrypted passwords over the internet. If you plan using UTF-8 encoding in your project don't forget to set the page encoding to UTF-8 (Content-Type meta tag).
+ * This function orginally get from the WebToolkit and rewrite for using as the jQuery plugin.
+ *
+ * Example
+ *  Code
+ *    <code>
+ *      $.md5("I'm Persian.");
+ *    </code>
+ *  Result
+ *    <code>
+ *      "b8c901d0f02223f9761016cfff9d68df"
+ *    </code>
+ *
+ * @alias Muhammad Hussein Fattahizadeh < muhammad [AT] semnanweb [DOT] com >
+ * @link http://www.semnanweb.com/jquery-plugin/md5.html
+ * @see http://www.webtoolkit.info/
+ * @license http://www.gnu.org/licenses/gpl.html [GNU General Public License]
+ * @param {jQuery} {md5:function(string))
+ * @return string
+ */
+
+const md5 = (() => {
+  function rotateLeft(lValue, iShiftBits) {
+    return lValue << iShiftBits | lValue >>> 32 - iShiftBits;
+  }
+
+  function addUnsigned(lX, lY) {
+    let lX4, lY4, lX8, lY8, lResult;
+    lX8 = lX & 0x80000000;
+    lY8 = lY & 0x80000000;
+    lX4 = lX & 0x40000000;
+    lY4 = lY & 0x40000000;
+    lResult = (lX & 0x3FFFFFFF) + (lY & 0x3FFFFFFF);
+    if (lX4 & lY4) return lResult ^ 0x80000000 ^ lX8 ^ lY8;
+    if (lX4 | lY4) {
+      if (lResult & 0x40000000) return lResult ^ 0xC0000000 ^ lX8 ^ lY8;else return lResult ^ 0x40000000 ^ lX8 ^ lY8;
+    } else {
+      return lResult ^ lX8 ^ lY8;
     }
   }
-  setOptions(opts) {
-    this.opts = Object.assign({}, this.opts, { opts });
+
+  function F(x, y, z) {
+    return x & y | ~x & z;
   }
-  before(fn) {
-    this.invoker = null;
-    this.invokeQueues.unshift(fn);
+
+  function G(x, y, z) {
+    return x & z | y & ~z;
   }
-  after(fn) {
-    this.invoker = null;
-    this.invokeQueues.push(fn);
+
+  function H(x, y, z) {
+    return x ^ y ^ z;
   }
-  get(url, options) {
-    return this.request(Object.assign({ method: 'GET', url }, options));
+
+  function I(x, y, z) {
+    return y ^ (x | ~z);
   }
-  post(url, options) {
-    return this.request(Object.assign({ method: 'POST', url }, options));
+
+  function FF(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(F(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
   }
-  put(url, options) {
-    return this.request(Object.assign({ method: 'PUT', url }, options));
+
+  function GG(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(G(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
   }
-  patch(url, options) {
-    return this.request(Object.assign({ method: 'PATCH', url }, options));
+
+  function HH(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(H(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
   }
-  del(url, options) {
-    return this.request(Object.assign({ method: 'DELETE', url }, options));
+
+  function II(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(I(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
   }
-  request(options) {
-    options = Object.assign({
-      url: '',
-      headers: {}
-    }, options);
-    if (!/^(http(s?):)?\/\//i.test(options.url)) {
-      options.url = this.opts.baseUrl + options.url;
+
+  function convertToWordArray(string) {
+    let lWordCount;
+    let lMessageLength = string.length;
+    let lNumberOfWordsTempOne = lMessageLength + 8;
+    let lNumberOfWordsTempTwo = (lNumberOfWordsTempOne - lNumberOfWordsTempOne % 64) / 64;
+    let lNumberOfWords = (lNumberOfWordsTempTwo + 1) * 16;
+    let lWordArray = Array(lNumberOfWords - 1);
+    let lBytePosition = 0;
+    let lByteCount = 0;
+    while (lByteCount < lMessageLength) {
+      lWordCount = (lByteCount - lByteCount % 4) / 4;
+      lBytePosition = lByteCount % 4 * 8;
+      lWordArray[lWordCount] = lWordArray[lWordCount] | string.charCodeAt(lByteCount) << lBytePosition;
+      lByteCount++;
     }
-    if (!this.invoker) {
-      this.invoker = compose(this.invokeQueues);
-    }
-    let { invoker } = this;
-    let { stripHeaders, handleError } = this.opts;
-    let ctx = { request: options };
-    let res = invoker(ctx);
-    if (stripHeaders) {
-      res = res.then(() => ctx.data);
-    }
-    if (handleError) {
-      return res.catch(err => {
-        this.emit('error', err);
-      });
-    }
-    return res;
+    lWordCount = (lByteCount - lByteCount % 4) / 4;
+    lBytePosition = lByteCount % 4 * 8;
+    lWordArray[lWordCount] = lWordArray[lWordCount] | 0x80 << lBytePosition;
+    lWordArray[lNumberOfWords - 2] = lMessageLength << 3;
+    lWordArray[lNumberOfWords - 1] = lMessageLength >>> 29;
+    return lWordArray;
   }
-  invoke(ctx, next$$1) {
-    return new Promise((resolve, reject) => {
-      ctx.xhr = ajax(ctx.request, (err, data, headers) => {
-        if (err) {
-          return reject(err);
-        }
-        try {
-          ctx.response = {
-            data,
-            headers
-          };
-          this.emit('response', ctx);
-        } catch (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-      this.emit('request', ctx);
-    }).then(next$$1);
+
+  function WordToHex(lValue) {
+    let WordToHexValue = '';
+    for (let lCount = 0; lCount <= 3; lCount++) {
+      let WordToHexValueTemp = '0' + (lValue >>> lCount * 8 & 255).toString(16);
+      WordToHexValue += WordToHexValueTemp.substr(WordToHexValueTemp.length - 2, 2);
+    }
+    return WordToHexValue;
   }
-}
+
+  function UTF8Encode(string) {
+    string = string.replace(/\x0d\x0a/g, '\x0a');
+    let output = '';
+    for (let n = 0; n < string.length; n++) {
+      let c = string.charCodeAt(n);
+      if (c < 128) {
+        output += String.fromCharCode(c);
+      } else if (c > 127 && c < 2048) {
+        output += String.fromCharCode(c >> 6 | 192);
+        output += String.fromCharCode(c & 63 | 128);
+      } else {
+        output += String.fromCharCode(c >> 12 | 224);
+        output += String.fromCharCode(c >> 6 & 63 | 128);
+        output += String.fromCharCode(c & 63 | 128);
+      }
+    }
+    return output;
+  }
+
+  const S11 = 7;
+  const S12 = 12;
+  const S13 = 17;
+  const S14 = 22;
+  const S21 = 5;
+  const S22 = 9;
+  const S23 = 14;
+  const S24 = 20;
+  const S31 = 4;
+  const S32 = 11;
+  const S33 = 16;
+  const S34 = 23;
+  const S41 = 6;
+  const S42 = 10;
+  const S43 = 15;
+  const S44 = 21;
+  return string => {
+    let x = [];
+    let k;
+    let AA;
+    let BB;
+    let CC;
+    let DD;
+    let a;
+    let b;
+    let c;
+    let d;
+    string = UTF8Encode(string);
+    x = convertToWordArray(string);
+    a = 0x67452301;b = 0xEFCDAB89;c = 0x98BADCFE;d = 0x10325476;
+    for (k = 0; k < x.length; k += 16) {
+      AA = a;BB = b;CC = c;DD = d;
+      a = FF(a, b, c, d, x[k + 0], S11, 0xD76AA478);
+      d = FF(d, a, b, c, x[k + 1], S12, 0xE8C7B756);
+      c = FF(c, d, a, b, x[k + 2], S13, 0x242070DB);
+      b = FF(b, c, d, a, x[k + 3], S14, 0xC1BDCEEE);
+      a = FF(a, b, c, d, x[k + 4], S11, 0xF57C0FAF);
+      d = FF(d, a, b, c, x[k + 5], S12, 0x4787C62A);
+      c = FF(c, d, a, b, x[k + 6], S13, 0xA8304613);
+      b = FF(b, c, d, a, x[k + 7], S14, 0xFD469501);
+      a = FF(a, b, c, d, x[k + 8], S11, 0x698098D8);
+      d = FF(d, a, b, c, x[k + 9], S12, 0x8B44F7AF);
+      c = FF(c, d, a, b, x[k + 10], S13, 0xFFFF5BB1);
+      b = FF(b, c, d, a, x[k + 11], S14, 0x895CD7BE);
+      a = FF(a, b, c, d, x[k + 12], S11, 0x6B901122);
+      d = FF(d, a, b, c, x[k + 13], S12, 0xFD987193);
+      c = FF(c, d, a, b, x[k + 14], S13, 0xA679438E);
+      b = FF(b, c, d, a, x[k + 15], S14, 0x49B40821);
+      a = GG(a, b, c, d, x[k + 1], S21, 0xF61E2562);
+      d = GG(d, a, b, c, x[k + 6], S22, 0xC040B340);
+      c = GG(c, d, a, b, x[k + 11], S23, 0x265E5A51);
+      b = GG(b, c, d, a, x[k + 0], S24, 0xE9B6C7AA);
+      a = GG(a, b, c, d, x[k + 5], S21, 0xD62F105D);
+      d = GG(d, a, b, c, x[k + 10], S22, 0x2441453);
+      c = GG(c, d, a, b, x[k + 15], S23, 0xD8A1E681);
+      b = GG(b, c, d, a, x[k + 4], S24, 0xE7D3FBC8);
+      a = GG(a, b, c, d, x[k + 9], S21, 0x21E1CDE6);
+      d = GG(d, a, b, c, x[k + 14], S22, 0xC33707D6);
+      c = GG(c, d, a, b, x[k + 3], S23, 0xF4D50D87);
+      b = GG(b, c, d, a, x[k + 8], S24, 0x455A14ED);
+      a = GG(a, b, c, d, x[k + 13], S21, 0xA9E3E905);
+      d = GG(d, a, b, c, x[k + 2], S22, 0xFCEFA3F8);
+      c = GG(c, d, a, b, x[k + 7], S23, 0x676F02D9);
+      b = GG(b, c, d, a, x[k + 12], S24, 0x8D2A4C8A);
+      a = HH(a, b, c, d, x[k + 5], S31, 0xFFFA3942);
+      d = HH(d, a, b, c, x[k + 8], S32, 0x8771F681);
+      c = HH(c, d, a, b, x[k + 11], S33, 0x6D9D6122);
+      b = HH(b, c, d, a, x[k + 14], S34, 0xFDE5380C);
+      a = HH(a, b, c, d, x[k + 1], S31, 0xA4BEEA44);
+      d = HH(d, a, b, c, x[k + 4], S32, 0x4BDECFA9);
+      c = HH(c, d, a, b, x[k + 7], S33, 0xF6BB4B60);
+      b = HH(b, c, d, a, x[k + 10], S34, 0xBEBFBC70);
+      a = HH(a, b, c, d, x[k + 13], S31, 0x289B7EC6);
+      d = HH(d, a, b, c, x[k + 0], S32, 0xEAA127FA);
+      c = HH(c, d, a, b, x[k + 3], S33, 0xD4EF3085);
+      b = HH(b, c, d, a, x[k + 6], S34, 0x4881D05);
+      a = HH(a, b, c, d, x[k + 9], S31, 0xD9D4D039);
+      d = HH(d, a, b, c, x[k + 12], S32, 0xE6DB99E5);
+      c = HH(c, d, a, b, x[k + 15], S33, 0x1FA27CF8);
+      b = HH(b, c, d, a, x[k + 2], S34, 0xC4AC5665);
+      a = II(a, b, c, d, x[k + 0], S41, 0xF4292244);
+      d = II(d, a, b, c, x[k + 7], S42, 0x432AFF97);
+      c = II(c, d, a, b, x[k + 14], S43, 0xAB9423A7);
+      b = II(b, c, d, a, x[k + 5], S44, 0xFC93A039);
+      a = II(a, b, c, d, x[k + 12], S41, 0x655B59C3);
+      d = II(d, a, b, c, x[k + 3], S42, 0x8F0CCC92);
+      c = II(c, d, a, b, x[k + 10], S43, 0xFFEFF47D);
+      b = II(b, c, d, a, x[k + 1], S44, 0x85845DD1);
+      a = II(a, b, c, d, x[k + 8], S41, 0x6FA87E4F);
+      d = II(d, a, b, c, x[k + 15], S42, 0xFE2CE6E0);
+      c = II(c, d, a, b, x[k + 6], S43, 0xA3014314);
+      b = II(b, c, d, a, x[k + 13], S44, 0x4E0811A1);
+      a = II(a, b, c, d, x[k + 4], S41, 0xF7537E82);
+      d = II(d, a, b, c, x[k + 11], S42, 0xBD3AF235);
+      c = II(c, d, a, b, x[k + 2], S43, 0x2AD7D2BB);
+      b = II(b, c, d, a, x[k + 9], S44, 0xEB86D391);
+      a = addUnsigned(a, AA);
+      b = addUnsigned(b, BB);
+      c = addUnsigned(c, CC);
+      d = addUnsigned(d, DD);
+    }
+    let tempValue = WordToHex(a) + WordToHex(b) + WordToHex(c) + WordToHex(d);
+    return tempValue.toLowerCase();
+  };
+})();
 
 function Flux(opts = { strict: true }) {
   let flux = this;
@@ -662,7 +770,6 @@ function initUse({ flux, prop: prop$$1 }) {
 function initUtil({ prop: prop$$1, opts }) {
   prop$$1('clone', clone);
   prop$$1('extend', extend);
-  prop$$1('request', new Request());
   prop$$1('opt', (name, defaultVal = null) => {
     return name in opts ? opts[name] : defaultVal;
   });
@@ -712,7 +819,7 @@ function initState({ prop: prop$$1, emit, cloneThen, clone: clone$$1, resolve })
 }
 
 function initCommit({ prop: prop$$1, flux, updateState, resolve }) {
-  let commit = (type, payload) => {
+  let commit = (type, payload, fetch) => {
     let { mutations } = flux;
     if (typeof type === 'object') {
       payload = type;
@@ -723,7 +830,7 @@ function initCommit({ prop: prop$$1, flux, updateState, resolve }) {
       throw new Error('[flux] unknown mutation : ' + type);
     }
     let state = flux.state;
-    let ret = entry(flux, payload);
+    let ret = entry(flux, payload, fetch);
     let update = ret => {
       if (ret) {
         if (ret === state) {
@@ -746,10 +853,10 @@ function initCommit({ prop: prop$$1, flux, updateState, resolve }) {
 }
 
 function initDispatch({ prop: prop$$1, flux, commit, resolve, reject, opts, cloneThen }) {
-  let dispatch = (action, payload) => {
+  let dispatch = (action, payload, fetch) => {
     let { actions, mutations, proxys } = flux;
-    let entry = action in actions && actions[action] || action in mutations && function (_, payload) {
-      return commit(action, payload);
+    let entry = action in actions && actions[action] || action in mutations && function (_, payload, fetch) {
+      return commit(action, payload, fetch);
     };
     if (!entry && proxys[action]) {
       entry = proxys[action];
@@ -759,7 +866,7 @@ function initDispatch({ prop: prop$$1, flux, commit, resolve, reject, opts, clon
     }
     let err, ret;
     try {
-      ret = entry(flux, payload);
+      ret = entry(flux, payload, fetch);
     } catch (e) {
       err = e;
     }
@@ -769,9 +876,12 @@ function initDispatch({ prop: prop$$1, flux, commit, resolve, reject, opts, clon
     if (!isPromiseLike(ret)) {
       ret = resolve(ret);
     }
+    if (fetch) {
+      return ret;
+    }
     // make copy
     return opts.strict ? ret.then(data => {
-      if (Array.isArray(data) || typeof data === 'object') {
+      if (Array.isArray(data) || typeof data === 'object' && data !== null) {
         if (data.__clone) {
           return resolve(data);
         }
@@ -868,8 +978,12 @@ function proxyApi(entry) {
   if (probe.Proxy) {
     return new Proxy(entry, {
       get(target, name) {
-        return payload => {
-          return entry(name, payload);
+        if (name === 'bind') {
+          // @NOTE vue 2.5 使用了bind
+          return () => entry;
+        }
+        return (payload, fetch) => {
+          return entry(name, payload, fetch);
         };
       }
     });
@@ -1074,7 +1188,8 @@ function FluxVue({ flux, mixinActions = false, injects = [], router, onRouteFail
   let vaf = {
     deepCopy,
     dispatch: flux.dispatch,
-    proxy: flux.proxy
+    proxy: flux.proxy,
+    subscribe: flux.subscribe
   };
   injects.forEach(key => {
     vaf[key] = flux[key];
@@ -1090,68 +1205,12 @@ function FluxVue({ flux, mixinActions = false, injects = [], router, onRouteFail
   }
   Vue$1.mixin({
     methods: {
-      dispatch(method, payload) {
-        return vaf.dispatch(method, payload);
-      }
+      dispatch: flux.dispatch,
+      updateState: flux.updateState,
+      commit: flux.commit
     }
   });
-  if (router) {
-    router.beforeEach((to, from, next$$1) => {
-      let matchedComponents = router.getMatchedComponents(to);
-      if (matchedComponents.length) {
-        let args = {
-          dispatch: vaf.dispatch,
-          route: to,
-          from: from,
-          state: vaf.vm.state
-        };
-        Promise.all(getComponentsPayloads(matchedComponents, deepth).map(Component => {
-          if (payload) {
-            return payload(Component, args, to, from);
-          }
-          return Component.payload(args);
-        })).then(next$$1).catch(err => {
-          if (!(err instanceof Error)) {
-            return next$$1(err);
-          }
-          if (onRouteFail) {
-            return onRouteFail(to, from, next$$1, err);
-          } else {
-            next$$1(false);
-          }
-        });
-      } else {
-        next$$1();
-      }
-    });
-  }
   return vaf;
-}
-
-function getComponentsPayloads(components, depth) {
-  let payloads = [];
-  if (Array.isArray(components)) {
-    for (let i = 0; i < components.length; ++i) {
-      let com = components[i];
-      if (com.payload) {
-        payloads.push(com);
-      }
-      if (depth && com.components) {
-        payloads = payloads.concat(getComponentsPayloads(com.components, depth--));
-      }
-    }
-  } else {
-    for (let comName in components) {
-      let com = components[comName];
-      if (com.payload) {
-        payloads.push(com);
-      }
-      if (depth && com.components) {
-        payloads = payloads.concat(getComponentsPayloads(com.components, depth--));
-      }
-    }
-  }
-  return payloads;
 }
 
 let vmGetterMaps = {};
@@ -1182,6 +1241,17 @@ function destroyVmGetters(vm) {
 
 FluxVue.install = function install(vue) {
   Vue$1 = vue;
+  let delegate = (vm, events) => {
+    let vmEvent = vm.$flux;
+    let reverse = events.map(it => vmEvent.subscribe(it, (...args) => {
+      vm[it](...args);
+    }));
+    return () => {
+      reverse.forEach(it => it());
+      delete vm.$unsubscribe;
+    };
+  };
+
   Vue$1.mixin({
     beforeCreate() {
       const options = this.$options;
@@ -1190,10 +1260,21 @@ FluxVue.install = function install(vue) {
       } else if (options.parent && options.parent.$flux) {
         this.$flux = options.parent.$flux;
       }
-      let { proxys, methods, actions, getters, computed } = options;
+      let { proxys, methods, actions, getters, computed, subscribes } = options;
       if (this.$flux) {
+        if (subscribes || actions) {
+          methods || (methods = this.$options.methods = {});
+        }
+        if (subscribes) {
+          if (!Array.isArray(subscribes)) {
+            // object
+            Object.assign(methods, subscribes);
+            subscribes = Object.keys(subscribes);
+          }
+          this.$unsubscribe = delegate(this, subscribes);
+        }
+
         if (actions) {
-          methods || (methods = options.methods = {});
           Object.assign(methods, mapActions(actions));
         }
         if (getters) {
@@ -1219,6 +1300,9 @@ FluxVue.install = function install(vue) {
       }
       if (isVmGetterMode) {
         destroyVmGetters(this);
+      }
+      if (this.$unsubscribe) {
+        this.$unsubscribe();
       }
       if (this.$flux) {
         delete this.$flux;
@@ -1248,12 +1332,12 @@ function mapActions(actions) {
   normalizeMap(actions).forEach(ref => {
     let key = ref.key;
     let val = ref.val;
-    res[key] = function mappedAction(payload) {
+    res[key] = function mappedAction(payload, fetch) {
       if (!this.$flux) {
         let message = `can not call action ${key} without flux`;
         return Promise.reject(new Error(message));
       }
-      return this.$flux.dispatch(val, payload);
+      return this.$flux.dispatch(val, payload, fetch);
     };
   });
   return res;
@@ -1320,11 +1404,12 @@ var TodoModule = {
     }
   },
   actions: {
-    createNew({ resolve, commit, dispatch }, title) {
+    createNew({ resolve, commit, dispatch, emit }, title) {
       let newItem = {};
       newItem.title = title;
       newItem.id = ++_startIdx;
       newItem.isCompleted = false;
+      emit('getTitle', title);
       commit.createNew(newItem);
       return dispatch.onCreateNew(newItem);
     }
@@ -1332,13 +1417,13 @@ var TodoModule = {
 };
 
 var Todo = { render: function () {
-		var _vm = this;var _h = _vm.$createElement;var _c = _vm._self._c || _h;return _c('div', { staticClass: "todolist" }, [_c('h4', [_vm._v("TODO LIST"), _c('i', [_vm._v("(create times " + _vm._s(_vm.count) + ")")])]), _c('ul', _vm._l(_vm.todoList, function (child) {
+		var _vm = this;var _h = _vm.$createElement;var _c = _vm._self._c || _h;return _c('div', { staticClass: "todolist" }, [_c('h4', [_vm._v("TODO LIST"), _c('i', [_vm._v("(create times " + _vm._s(_vm.count) + ")")])]), _vm._v(" "), _c('ul', _vm._l(_vm.todoList, function (child) {
 			return _c('li', [_c('label', [_c('input', { attrs: { "type": "checkbox" }, domProps: { "checked": child.isCompleted }, on: { "change": function ($event) {
 						_vm.toggleCompleted(child);
-					} } }), _vm._v(" "), _c('span', [_vm._v(_vm._s(child.title))])]), _c('button', { on: { "click": function ($event) {
+					} } }), _vm._v(" "), _c('span', [_vm._v(_vm._s(child.title))])]), _vm._v(" "), _c('button', { on: { "click": function ($event) {
 						_vm.removeItemById(child.id);
 					} } }, [_vm._v("x")])]);
-		})), _c('input', { directives: [{ name: "model", rawName: "v-model", value: _vm.newText, expression: "newText" }], attrs: { "type": "text" }, domProps: { "value": _vm.newText }, on: { "input": function ($event) {
+		})), _vm._v(" "), _c('input', { directives: [{ name: "model", rawName: "v-model", value: _vm.newText, expression: "newText" }], attrs: { "type": "text" }, domProps: { "value": _vm.newText }, on: { "input": function ($event) {
 					if ($event.target.composing) {
 						return;
 					}_vm.newText = $event.target.value;
@@ -1347,14 +1432,19 @@ var Todo = { render: function () {
 				} } }, [_vm._v("Add")])]);
 	}, staticRenderFns: [],
 	getters: ['todoList'],
+	subscribes: {
+		getTitle(arg) {
+			console.log('broadcat', arg);
+		}
+	},
 	data: function () {
 		return {
 			newText: '',
 			count: 0
 		};
 	},
-	payload({ dispatch }) {
-		return dispatch('restoreItems', [{
+	payload(route, { dispatch }) {
+		dispatch('restoreItems', [{
 			title: 'payload-todo',
 			id: 1,
 			isCompleted: true
@@ -1390,7 +1480,10 @@ let app = new Vue({
     mixinActions: true
   }),
   router,
-  el: '#app'
+  el: '#app',
+  mounted() {
+    // this.$broadcast('check', 'helo12aaaa3')
+  }
 });
 
 window.flux = flux;
