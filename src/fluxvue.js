@@ -103,13 +103,12 @@ function destroyVmGetters (vm) {
   }
 }
 
-
 FluxVue.install = function install (vue) {
   Vue = vue
   let delegate = (vm, events) => {
     let vmEvent = vm.$flux
     let reverse = events.map(it => vmEvent.subscribe(it, (...args) => {
-     vm[it](...args)
+      vm[it](...args)
     }))
     return () => {
       reverse.forEach(it => it())
