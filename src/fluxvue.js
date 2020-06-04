@@ -120,9 +120,9 @@ FluxVue.install = function install (vue) {
     beforeCreate () {
       const options = this.$options
       if (options.vaf) {
-        this.$flux = options.vaf
+        Vue.prototype.$flux = this.$flux = options.vaf
       } else if (options.parent && options.parent.$flux) {
-        this.$flux = options.parent.$flux
+        Vue.prototype.$flux = this.$flux = options.parent.$flux
       }
       let {proxys, methods, actions, getters, computed, subscribes} = options
       if (this.$flux) {
@@ -169,6 +169,9 @@ FluxVue.install = function install (vue) {
       }
       if (this.$flux) {
         delete this.$flux
+      }
+      if (Vue.prototype.$flux) {
+        delete Vue.prototype.$flux
       }
     }
   })
